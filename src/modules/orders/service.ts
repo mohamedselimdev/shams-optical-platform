@@ -1,4 +1,5 @@
 import "server-only";
+import { OFFLINE_PROVIDER } from "../payments/registry";
 import { z } from "zod";
 import { db, type Tx } from "@/server/db";
 import { audit } from "@/server/audit";
@@ -66,7 +67,7 @@ export async function applyTransition(tx: Tx, actor: Actor, order: OrderRow, to:
   if (to === "DELIVERED") {
     const outstanding = order.total - order.paidTotal;
     if (outstanding > 0) {
-      if (!ctx.collectPayment || !["COD", "PAY_AT_BRANCH"].includes(order.paymentMethod)) {
+      if (!ctx.collectPayment || !["COD", "PAY_AT_BRANCH", "CASH", "CARD_PRESENT"].includes(order.paymentMethod)) {
         throw invalidState("لا يمكن إتمام التسليم قبل تحصيل المبلغ المستحق");
       }
       await collectOfflinePayment(tx, actor, order, outstanding);
@@ -138,7 +139,7 @@ async function collectOfflinePayment(tx: Tx, actor: Actor, order: OrderRow, amou
     await tx.payment.create({
       data: {
         orderId: order.id,
-        provider: order.paymentMethod === "COD" ? "cod" : "branch",
+        provider: OFFLINE_PROVIDER[order.paymentMethod] ?? "branch",
         method: order.paymentMethod,
         amount,
         status: "SUCCEEDED",

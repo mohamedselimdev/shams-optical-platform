@@ -14,8 +14,6 @@ export type JobType =
   | "payments.reconcile"
   | "payments.refund_orphan"
   | "carts.mark_abandoned"
-  | "carts.recovery_email"
-  | "analytics.ga4_forward";
 
 export async function enqueue(
   client: DbOrTx,

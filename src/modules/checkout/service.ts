@@ -223,18 +223,24 @@ async function chooseFulfillmentBranch(tx: Tx, cart: CartWithItems, type: "DELIV
   throw new DomainError("INSUFFICIENT_STOCK", "بعض المنتجات غير متوفرة للتوصيل حالياً");
 }
 
-function buildOrderData(
+/** The order-level fields shared by web checkout and POS. */
+export type OrderDataInput = Pick<
+  z.infer<typeof checkoutSchema>,
+  "fulfillmentType" | "contactName" | "contactEmail" | "contactPhone" | "couponCode" | "customerNote" | "idempotencyKey" | "analyticsSessionId"
+> & { paymentMethod: PaymentMethod };
+
+export function buildOrderData(
   quote: Quote,
   cart: CartWithItems,
-  data: z.infer<typeof checkoutSchema>,
-  extra: { number: string; branchId: string; initialStatus: OrderStatus; address: unknown; customerId: string | null; actor: Actor | null },
+  data: OrderDataInput,
+  extra: { number: string; branchId: string; initialStatus: OrderStatus; address: unknown; customerId: string | null; actor: Actor | null; channel?: "WEB" | "POS" | "ADMIN" },
 ): Prisma.OrderUncheckedCreateInput {
   const p = quote.pricing;
   const priced = new Map(p.lines.map((l) => [l.key, l]));
   return {
     number: extra.number,
     customerId: extra.customerId,
-    channel: "WEB",
+    channel: extra.channel ?? "WEB",
     status: extra.initialStatus,
     paymentStatus: "UNPAID",
     paymentMethod: data.paymentMethod,
