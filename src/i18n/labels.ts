@@ -2,7 +2,7 @@
 import type {
   OrderStatus, PaymentStatus, PaymentMethod, FulfillmentType, TransferStatus, PurchaseOrderStatus, ReturnStatus,
   MovementType, ProductType, ProductStatus, PrescriptionStatus, Gender, PaymentAttemptStatus, RefundStatus, ReviewStatus,
-  DiscountType, PromotionScope, LoyaltyTxType, SalesChannel, LensOptionGroup, ReturnResolution, RestockDecision,
+  DiscountType, PromotionScope, LoyaltyTxType, SalesChannel, LensOptionGroup, ReturnResolution, RestockDecision, PrescriptionMode,
 } from "@/generated/prisma/enums";
 
 export const ORDER_STATUS_LABELS: Record<OrderStatus, string> = {
@@ -139,3 +139,4 @@ export const LENS_GROUP_LABELS: Record<LensOptionGroup, string> = {
   TINT: "تلوين",
   POLARIZATION: "استقطاب",
 };
+export const RX_MODE_LABELS: Record<PrescriptionMode, string> = { NONE: "بدون وصفة", UPLOADED: "صورة وصفة مرفوعة", ENTERED: "قيم مُدخلة", SAVED: "وصفة محفوظة" };

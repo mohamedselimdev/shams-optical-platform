@@ -1,26 +1,104 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
+/*
+ * SHAMS design tokens. All colors, radii, shadows and type scale come from here;
+ * components reference tokens (e.g. bg-surface, text-ink-muted) instead of raw values.
+ */
+@theme {
+  --font-sans: var(--font-plex), ui-sans-serif, system-ui, sans-serif;
+  --font-display: var(--font-alexandria), var(--font-plex), ui-sans-serif, sans-serif;
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
+  /* Brand */
+  --color-sun-50: #fdf8ea;
+  --color-sun-100: #f9edc8;
+  --color-sun-200: #f2d98d;
+  --color-sun-300: #e9c155;
+  --color-sun-400: #dfa92f;
+  --color-sun-500: #c98f1b;
+  --color-sun-600: #a87114;
+  --color-sun-700: #835614;
+  --color-sun-800: #5f3f13;
+  --color-sun-900: #3d2a0f;
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+  --color-ink: #17140f;
+  --color-ink-soft: #3a342b;
+  --color-ink-muted: #6e665a;
+  --color-ink-faint: #9c9385;
+
+  --color-canvas: #f7f3ec;
+  --color-surface: #fffdf9;
+  --color-surface-2: #f2ede4;
+  --color-line: #e6dfd2;
+  --color-line-strong: #d3c9b8;
+
+  --color-clay: #b4573a;
+  --color-nile: #1f5f6b;
+
+  /* Semantic */
+  --color-success: #2f7a4f;
+  --color-success-soft: #e6f2ea;
+  --color-warning: #a8670f;
+  --color-warning-soft: #fbf0dc;
+  --color-danger: #b03a2e;
+  --color-danger-soft: #f8e5e2;
+  --color-info: #285f8f;
+  --color-info-soft: #e3eef7;
+
+  /* Charts (categorical; validated for contrast on surface) */
+  --color-chart-1: #c98f1b;
+  --color-chart-2: #1f5f6b;
+  --color-chart-3: #b4573a;
+  --color-chart-4: #6b5b95;
+  --color-chart-5: #5c8a3a;
+
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 16px;
+  --radius-xl: 24px;
+
+  --shadow-card: 0 1px 2px rgb(23 20 15 / 0.04), 0 4px 16px rgb(23 20 15 / 0.05);
+  --shadow-pop: 0 8px 32px rgb(23 20 15 / 0.12);
+
+  --animate-fade-in: fade-in 180ms ease-out;
+  @keyframes fade-in {
+    from { opacity: 0; transform: translateY(4px); }
+    to { opacity: 1; transform: none; }
   }
 }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+@layer base {
+  html {
+    -webkit-text-size-adjust: 100%;
+    text-rendering: optimizeLegibility;
+  }
+  body {
+    @apply bg-canvas text-ink antialiased;
+    font-feature-settings: "kern";
+  }
+  :focus-visible {
+    outline: 2px solid var(--color-sun-500);
+    outline-offset: 2px;
+    border-radius: 4px;
+  }
+  ::selection {
+    background: var(--color-sun-200);
+    color: var(--color-ink);
+  }
+  /* Numbers (prices, SKUs) stay LTR-shaped inside RTL text. */
+  .num {
+    font-variant-numeric: tabular-nums;
+    unicode-bidi: plaintext;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
+  }
+}
+
+@layer components {
+  .container-page {
+    @apply mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8;
+  }
+  .skip-link {
+    @apply sr-only focus:not-sr-only focus:fixed focus:top-3 focus:right-3 focus:z-50 focus:rounded-md focus:bg-ink focus:px-4 focus:py-2 focus:text-surface;
+  }
 }
