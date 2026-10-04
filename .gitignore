@@ -39,3 +39,11 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# SHAMS
+/storage
+/storage-test
+/src/generated
+/test-results
+/playwright-report
+/public/catalog
