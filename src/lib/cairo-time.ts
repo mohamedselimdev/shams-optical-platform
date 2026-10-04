@@ -36,3 +36,17 @@ export function addDays(day: string, n: number): string {
   d.setUTCDate(d.getUTCDate() + n);
   return d.toISOString().slice(0, 10);
 }
+
+/** Parse a "YYYY-MM-DDTHH:mm" Cairo wall-clock value into an instant. */
+export function cairoLocalToDate(local: string): Date | null {
+  const m = /^(\d{4}-\d{2}-\d{2})T(\d{2}):(\d{2})$/.exec(local);
+  if (!m) return null;
+  return new Date(cairoDayStart(m[1]).getTime() + (Number(m[2]) * 60 + Number(m[3])) * 60_000);
+}
+
+/** Format an instant as a Cairo "YYYY-MM-DDTHH:mm" value for datetime-local inputs. */
+export function toCairoLocal(d: Date): string {
+  const parts = new Intl.DateTimeFormat("en-CA", { timeZone: TZ, hourCycle: "h23", year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit" }).formatToParts(d);
+  const g = (t: string) => parts.find((p) => p.type === t)?.value ?? "00";
+  return `${g("year")}-${g("month")}-${g("day")}T${g("hour")}:${g("minute")}`;
+}

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { cairoDate, cairoDayEnd, cairoDayStart, addDays } from "./cairo-time";
+import { cairoDate, cairoDayEnd, cairoDayStart, addDays, cairoLocalToDate, toCairoLocal } from "./cairo-time";
 
 describe("cairo time", () => {
   it("handles winter (UTC+2) and summer DST (UTC+3) offsets", () => {
@@ -10,5 +10,11 @@ describe("cairo time", () => {
   it("derives the Cairo calendar date from an instant", () => {
     expect(cairoDate(new Date("2026-10-04T23:30:00Z"))).toBe("2026-10-05");
     expect(addDays("2026-03-01", -1)).toBe("2026-02-28");
+  });
+  it("round-trips datetime-local wall-clock values", () => {
+    const d = cairoLocalToDate("2026-07-01T09:30")!;
+    expect(d.toISOString()).toBe("2026-07-01T06:30:00.000Z");
+    expect(toCairoLocal(d)).toBe("2026-07-01T09:30");
+    expect(cairoLocalToDate("bad")).toBeNull();
   });
 });

@@ -1,4 +1,5 @@
 import "server-only";
+import { notFound } from "@/server/errors";
 import { z } from "zod";
 import { db, type DbOrTx } from "@/server/db";
 import { audit } from "@/server/audit";
@@ -50,6 +51,10 @@ export async function saveRate(actor: Actor, zoneId: string, id: string | null, 
   assertCan(actor, "shipping.write");
   const data = rateSchema.parse(input);
   const payload = { ...data, codFee: data.codFee ?? 0 };
+  if (id) {
+    const existing = await db.shippingRate.findFirst({ where: { id, zoneId } });
+    if (!existing) throw notFound("سعر الشحن");
+  }
   const rate = id ? await db.shippingRate.update({ where: { id }, data: payload }) : await db.shippingRate.create({ data: { ...payload, zoneId } });
   await audit(db, actor, { action: "shipping.update", entityType: "shipping_rate", entityId: rate.id, after: payload });
   return rate;
