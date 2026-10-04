@@ -106,8 +106,8 @@ export function Table({ children, className }: { children: ReactNode; className?
 export function Th({ children, className }: { children?: ReactNode; className?: string }) {
   return <th className={cn("border-b border-line bg-surface-2/60 px-4 py-2.5 text-start text-xs font-semibold text-ink-muted", className)}>{children}</th>;
 }
-export function Td({ children, className, colSpan }: { children?: ReactNode; className?: string; colSpan?: number }) {
-  return <td colSpan={colSpan} className={cn("border-b border-line px-4 py-3 align-middle", className)}>{children}</td>;
+export function Td({ className, ...props }: ComponentProps<"td">) {
+  return <td className={cn("border-b border-line px-4 py-3 align-middle", className)} {...props} />;
 }
 
 export function Stat({ label, value, hint, tone }: { label: string; value: ReactNode; hint?: ReactNode; tone?: "up" | "down" }) {

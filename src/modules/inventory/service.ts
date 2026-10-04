@@ -82,7 +82,14 @@ export async function listStock(actor: Actor, filter: StockFilter) {
   assertCan(actor, "inventory.read", filter.branchId);
   const pageSize = Math.min(filter.pageSize ?? 50, 200);
   const page = Math.max(filter.page ?? 1, 1);
+  // "Low" compares two columns (available vs reorder point), so resolve matching ids in SQL first
+  // to keep pagination correct.
+  const lowIds =
+    filter.status === "low"
+      ? (await db.$queryRaw<{ id: string }[]>`SELECT "id" FROM "inventory_item" WHERE ("onHand" - "reserved") <= GREATEST("reorderPoint", 0)`).map((r) => r.id)
+      : null;
   const where = {
+    ...(lowIds ? { id: { in: lowIds } } : {}),
     ...branchScope(actor),
     ...(filter.branchId ? { branchId: filter.branchId } : {}),
     ...(filter.q
@@ -111,9 +118,7 @@ export async function listStock(actor: Actor, filter: StockFilter) {
     }),
     db.inventoryItem.count({ where }),
   ]);
-  const items = rows
-    .map((r) => ({ ...r, available: r.onHand - r.reserved }))
-    .filter((r) => (filter.status === "low" ? r.available <= Math.max(r.reorderPoint, 0) : true));
+  const items = rows.map((r) => ({ ...r, available: r.onHand - r.reserved }));
   return { items, total, page, pageSize };
 }
 
