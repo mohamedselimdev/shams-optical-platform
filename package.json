@@ -13,7 +13,8 @@
     "test": "vitest run",
     "worker": "tsx --conditions=react-server scripts/worker.ts",
     "postinstall": "prisma generate",
-    "db:demo": "tsx --conditions=react-server scripts/demo-orders.ts"
+    "db:demo": "tsx --conditions=react-server scripts/demo-orders.ts",
+    "test:e2e": "playwright test"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.1146.0",

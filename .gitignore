@@ -48,3 +48,8 @@ next-env.d.ts
 /playwright-report
 /public/catalog
 !.env.example
+
+# test output
+/test-results/
+/playwright-report/
+/storage-test/
