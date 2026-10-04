@@ -229,3 +229,12 @@ export async function getReturnForStaff(actor: StaffActor, id: string) {
   if (!r) throw notFound("طلب الإرجاع");
   return { ...r, estimatedRefund: Math.min(computeReturnRefund(r.items), r.order.paidTotal - r.order.refundedTotal) };
 }
+
+/** A customer's own return requests. */
+export async function listMyReturns(customerId: string) {
+  return db.returnRequest.findMany({
+    where: { customerId },
+    orderBy: { createdAt: "desc" },
+    include: { order: { select: { number: true } }, items: { include: { orderItem: { select: { productName: true, variantName: true } } } } },
+  });
+}

@@ -4,6 +4,7 @@ import { db } from "@/server/db";
 import { audit } from "@/server/audit";
 import { type StaffActor, type CustomerActor, assertCan, can } from "@/server/rbac/actor";
 import { invalid, notFound } from "@/server/errors";
+import { zEgyptPhone } from "@/lib/validation";
 import { addressSchema } from "../checkout/service";
 
 export async function listCustomers(actor: StaffActor, q: string | undefined, page = 1) {
@@ -75,7 +76,7 @@ export async function addCustomerNote(actor: StaffActor, customerId: string, bod
 export const profileSchema = z.object({
   firstName: z.string().trim().min(1, "الاسم مطلوب").max(60),
   lastName: z.string().trim().max(60).optional().transform((v) => v || null),
-  phone: z.string().trim().max(20).optional().transform((v) => v || null),
+  phone: z.union([z.literal(""), zEgyptPhone]).optional().transform((v) => v || null),
   marketingOptIn: z.union([z.literal("on"), z.boolean()]).optional().transform((v) => v === true || v === "on"),
 });
 
@@ -116,4 +117,9 @@ export async function toggleWishlist(actor: CustomerActor, productId: string) {
   if (!product) throw notFound("المنتج");
   await db.wishlistItem.create({ data: { customerId: actor.customerId, productId } });
   return true;
+}
+
+export async function listMyWishlist(actor: CustomerActor) {
+  const rows = await db.wishlistItem.findMany({ where: { customerId: actor.customerId }, orderBy: { createdAt: "desc" }, select: { productId: true } });
+  return rows.map((r) => r.productId);
 }

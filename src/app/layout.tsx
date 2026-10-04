@@ -1,4 +1,5 @@
 import type { Metadata, Viewport } from "next";
+import { headers } from "next/headers";
 import { alexandria, plex } from "./fonts";
 import "./globals.css";
 
@@ -19,7 +20,10 @@ export const viewport: Viewport = {
   initialScale: 1,
 };
 
-export default function RootLayout({ children }: { children: React.ReactNode }) {
+export default async function RootLayout({ children }: { children: React.ReactNode }) {
+  // Reading request headers opts every page into dynamic rendering, which the per-request CSP nonce
+  // (set in src/proxy.ts and applied by Next.js to its own scripts) requires.
+  await headers();
   return (
     <html lang="ar" dir="rtl" className={`${plex.variable} ${alexandria.variable}`}>
       <body className="min-h-dvh font-sans">{children}</body>
