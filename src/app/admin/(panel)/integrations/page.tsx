@@ -18,9 +18,9 @@ export default async function IntegrationsPage() {
     { name: "Paymob (بطاقات ومحافظ)", state: paymob.configured ? "ok" : "missing", detail: paymob.configured ? "مُعد. لم يُختبر على حساب حقيقي بعد؛ نفّذ عملية تجريبية قبل الإطلاق." : "REQUIRES_EXTERNAL_CONFIG: الدفع الإلكتروني الحقيقي غير متاح.", vars: "PAYMOB_SECRET_KEY, PAYMOB_PUBLIC_KEY, PAYMOB_HMAC_SECRET, PAYMOB_CARD_INTEGRATION_ID, PAYMOB_WALLET_INTEGRATION_ID" },
     { name: "بيئة اختبار الدفع", state: sandbox.configured ? "sandbox" : "missing", detail: sandbox.configured ? (env.NODE_ENV === "production" ? "تحذير: مفعّلة في الإنتاج — يجب إيقافها." : "مفعّلة للتطوير والاختبار.") : "متوقفة.", vars: "PAYMENT_SANDBOX_ENABLED" },
     { name: "البريد الإلكتروني", state: env.RESEND_API_KEY ? "ok" : "missing", detail: env.RESEND_API_KEY ? "Resend مُعد." : env.NODE_ENV === "production" ? "REQUIRES_EXTERNAL_CONFIG: إرسال البريد متوقف وستفشل رسائل التحقق." : "REQUIRES_EXTERNAL_CONFIG: في التطوير تُحفظ الرسائل في storage/dev-mail ولا تُرسل.", vars: "RESEND_API_KEY, EMAIL_FROM" },
-    { name: "الرسائل النصية / واتساب", state: env.SMS_PROVIDER_API_KEY ? "ok" : "missing", detail: "REQUIRES_EXTERNAL_CONFIG: لم يُربط مزود رسائل نصية بعد؛ الإشعارات النصية غير مفعّلة.", vars: "SMS_PROVIDER_API_KEY" },
+    { name: "الرسائل النصية / واتساب", state: "missing", detail: "PLANNED: لا يوجد ربط مع مزود رسائل نصية بعد؛ تُسجَّل الرسائل كـ«متخطاة» في سجل الإشعارات." },
     { name: "تخزين الملفات", state: env.STORAGE_DRIVER === "s3" ? (storageConfigured() ? "ok" : "missing") : "sandbox", detail: env.STORAGE_DRIVER === "s3" ? (storageConfigured() ? "S3 مُعد." : "S3 محدد لكن الإعداد ناقص؛ يُستخدم التخزين المحلي.") : "تخزين محلي على الخادم (مناسب لخادم واحد فقط).", vars: "STORAGE_DRIVER=s3, S3_*" },
-    { name: "مراقبة الأخطاء", state: env.SENTRY_DSN ? "ok" : "missing", detail: env.SENTRY_DSN ? "مُعد." : "REQUIRES_EXTERNAL_CONFIG: الأخطاء تُسجَّل في سجلات الخادم فقط.", vars: "SENTRY_DSN" },
+    { name: "مراقبة الأخطاء", state: "missing", detail: "PLANNED: الأخطاء تُسجَّل في سجلات الخادم (JSON) مع رمز حادثة؛ لا يوجد ربط مع خدمة مراقبة خارجية بعد." },
     { name: "شركات الشحن", state: "missing", detail: "REQUIRES_EXTERNAL_CONFIG: لا يوجد ربط آلي مع Bosta/Aramex؛ أرقام التتبع تُدخل يدوياً.", vars: "—" },
   ];
   const tone = { ok: "success", sandbox: "warning", missing: "neutral" } as const;

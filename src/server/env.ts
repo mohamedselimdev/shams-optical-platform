@@ -24,15 +24,12 @@ const schema = z.object({
   S3_PRIVATE_BUCKET: optional,
   S3_PUBLIC_BASE_URL: optional,
 
-  REDIS_URL: optional,
-
   // Payments
   PAYMENT_SANDBOX_ENABLED: z
     .enum(["true", "false"])
     .default("true")
     .transform((v) => v === "true"),
   PAYMENT_SANDBOX_SECRET: z.string().default("sandbox-webhook-secret-dev-only"),
-  PAYMOB_API_KEY: optional,
   PAYMOB_SECRET_KEY: optional,
   PAYMOB_PUBLIC_KEY: optional,
   PAYMOB_HMAC_SECRET: optional,
@@ -42,16 +39,11 @@ const schema = z.object({
 
   // Email / SMS
   EMAIL_FROM: z.string().default("SHAMS <no-reply@shams.example>"),
-  SMTP_URL: optional,
   RESEND_API_KEY: optional,
-  SMS_PROVIDER_API_KEY: optional,
 
   // Analytics
-  GA4_MEASUREMENT_ID: optional,
-  GA4_API_SECRET: optional,
 
   // Error tracking
-  SENTRY_DSN: optional,
 
   // Hash salt for privacy-preserving IP hashing in audit/analytics.
   IP_HASH_SALT: z.string().default("dev-ip-salt"),

@@ -14,7 +14,7 @@ import type { OrderStatus } from "@/generated/prisma/enums";
 
 /**
  * Background job handlers. Customer messages are stored in `notification` (without secrets) so staff
- * can audit what was sent. SMS requires a provider (REQUIRES_EXTERNAL_CONFIG); email uses the configured transport.
+ * can audit what was sent. SMS is not integrated yet (recorded as SKIPPED); email uses the configured transport.
  */
 async function notifyOrderStatus(payload: Record<string, unknown>) {
   const order = await db.order.findUnique({ where: { id: String(payload.orderId) }, select: { id: true, number: true, contactName: true, contactEmail: true, contactPhone: true, customerId: true, total: true } });
@@ -34,9 +34,8 @@ async function notifyOrderStatus(payload: Record<string, unknown>) {
       throw err;
     }
   }
-  if (!env.SMS_PROVIDER_API_KEY) {
-    await db.notification.create({ data: { channel: "SMS", recipient: order.contactPhone, customerId: order.customerId, template: "order_status", body: subject, status: "SKIPPED", error: "SMS provider not configured", data: { orderId: order.id, status } } });
-  }
+  // No SMS/WhatsApp adapter is implemented yet: record the intent so staff can see what would be sent.
+  await db.notification.create({ data: { channel: "SMS", recipient: order.contactPhone, customerId: order.customerId, template: "order_status", body: subject, status: "SKIPPED", error: "SMS provider not integrated", data: { orderId: order.id, status } } });
   // In-app notification for staff dashboards on new paid/processing orders.
   if (status === "PAID" || status === "PRESCRIPTION_REVIEW") {
     const staff = await db.staffProfile.findMany({ where: { isActive: true, roles: { some: { role: { permissions: { some: { permission: "orders.update" } } } } } }, select: { userId: true } });
