@@ -1,8 +1,8 @@
 import { notFound } from "next/navigation";
 import { requireCustomerPage } from "@/server/auth/session";
-import { getSetting } from "@/server/settings";
 import { isDomainError } from "@/server/errors";
 import { getOrderForCustomer } from "@/modules/orders/service";
+import { customerReturnOptions } from "@/modules/returns/service";
 import { FULFILLMENT_LABELS, ORDER_STATUS_LABELS, PAYMENT_METHOD_LABELS, PAYMENT_STATUS_LABELS, RETURN_STATUS_LABELS } from "@/i18n/labels";
 import { orderTone } from "@/i18n/tones";
 import { ActionForm } from "@/ui/action-form";
@@ -20,11 +20,9 @@ export default async function MyOrder({ params }: { params: Promise<{ number: st
     if (isDomainError(e) && e.code === "NOT_FOUND") notFound();
     throw e;
   });
-  const policy = await getSetting("returns");
-  const deliveredAt = order.completedAt;
-  const withinWindow = order.status === "DELIVERED" && deliveredAt && (Date.now() - deliveredAt.getTime()) / 86_400_000 <= policy.windowDays;
-  const returnable = order.items.filter((i) => (i.returnable || policy.allowPrescriptionLensReturns) && i.quantity - i.returnedQuantity > 0);
-  const canReturn = policy.allowCustomerRequests && withinWindow && returnable.length > 0;
+  const policy = await customerReturnOptions(order);
+  const returnable = order.items.filter((i) => policy.itemIds.includes(i.id));
+  const canReturn = returnable.length > 0;
 
   return (
     <div className="space-y-8">

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useSyncExternalStore } from "react";
 import { usePathname, useSearchParams } from "next/navigation";
 
 /**
@@ -15,6 +15,11 @@ function readConsent(): "granted" | "denied" | null {
 }
 
 let enabled = false;
+const listeners = new Set<() => void>();
+const subscribe = (cb: () => void) => {
+  listeners.add(cb);
+  return () => listeners.delete(cb);
+};
 
 type EventInput = { name: string; productId?: string; variantId?: string; branchId?: string; value?: number; props?: Record<string, string | number | boolean> };
 
@@ -33,19 +38,19 @@ export function track(event: EventInput) {
 export function Analytics({ active, requireConsent }: { active: boolean; requireConsent: boolean }) {
   const pathname = usePathname();
   const search = useSearchParams();
-  const [consent, setConsent] = useState<"granted" | "denied" | null | "unknown">("unknown");
-
-  useEffect(() => setConsent(readConsent()), []);
-  enabled = active && (!requireConsent || consent === "granted");
+  // Cookie-backed consent; "unknown" during SSR so the banner never flashes for returning visitors.
+  const consent = useSyncExternalStore(subscribe, readConsent, () => "unknown" as const);
+  const allowed = active && (!requireConsent || consent === "granted");
 
   useEffect(() => {
-    if (enabled) track({ name: "page_view" });
-  }, [pathname, search, consent]);
+    enabled = allowed;
+    if (allowed) track({ name: "page_view" });
+  }, [allowed, pathname, search]);
 
   if (!active || !requireConsent || consent !== null) return null;
   const choose = (v: "granted" | "denied") => {
     document.cookie = `${CONSENT_COOKIE}=${v}; Path=/; Max-Age=${60 * 60 * 24 * 180}; SameSite=Lax${location.protocol === "https:" ? "; Secure" : ""}`;
-    setConsent(v);
+    listeners.forEach((l) => l());
   };
   return (
     <div role="dialog" aria-live="polite" aria-label="ملفات تعريف الارتباط" className="fixed inset-x-3 bottom-3 z-50 mx-auto max-w-xl rounded-lg border border-line bg-surface p-4 shadow-pop sm:inset-x-auto sm:end-4">

@@ -1,6 +1,6 @@
 import { requireStaffPage } from "@/server/auth/session";
-import { db } from "@/server/db";
 import { env } from "@/server/env";
+import { systemHealth } from "@/modules/system/health";
 import { PageHeader } from "@/components/admin/page-header";
 import { ActionForm } from "@/ui/action-form";
 import { SubmitButton } from "@/ui/submit-button";
@@ -11,33 +11,15 @@ export const metadata = { title: "صحة النظام" };
 
 export default async function SystemPage() {
   await requireStaffPage("system.health");
-  const started = Date.now();
-  await db.$queryRaw`SELECT 1`;
-  const dbMs = Date.now() - started;
-  const [byStatus, failed, lastSucceeded, stuckPayments, pendingOrders, migrations] = await Promise.all([
-    db.job.groupBy({ by: ["status"], _count: true }),
-    db.job.findMany({ where: { status: "FAILED" }, orderBy: { updatedAt: "desc" }, take: 20 }),
-    db.job.findFirst({ where: { status: "SUCCEEDED" }, orderBy: { updatedAt: "desc" }, select: { updatedAt: true } }),
-    db.payment.count({ where: { status: "PENDING", createdAt: { lt: new Date(Date.now() - 30 * 60_000) }, provider: { notIn: ["cod", "branch"] } } }),
-    db.order.count({ where: { status: "PENDING_PAYMENT" } }),
-    db.$queryRaw<{ migration_name: string; finished_at: Date | null }[]>`SELECT migration_name, finished_at FROM _prisma_migrations ORDER BY started_at DESC LIMIT 5`,
-  ]);
-  const count = (s: string) => byStatus.find((b) => b.status === s)?._count ?? 0;
-  const workerHealthy = lastSucceeded && Date.now() - lastSucceeded.updatedAt.getTime() < 15 * 60_000;
-  const warnings = [
-    env.NODE_ENV === "production" && env.PAYMENT_SANDBOX_ENABLED ? "بيئة اختبار الدفع مفعّلة في الإنتاج" : null,
-    env.NODE_ENV === "production" && env.STORAGE_DRIVER === "local" ? "التخزين المحلي في الإنتاج لا يصلح لأكثر من خادم" : null,
-    env.IP_HASH_SALT === "dev-ip-salt" && env.NODE_ENV === "production" ? "IP_HASH_SALT يستخدم القيمة الافتراضية" : null,
-    !workerHealthy ? "لم ينفّذ العامل الخلفي (worker) أي مهمة خلال 15 دقيقة — تأكد من تشغيل npm run worker" : null,
-  ].filter(Boolean) as string[];
+  const { dbMs, failed, stuckPayments, pendingOrders, migrations, workerHealthy, warnings, queued, failedCount } = await systemHealth();
   return (
     <>
       <PageHeader title="صحة النظام" />
       {warnings.length ? <ul className="mb-6 space-y-1 rounded-md border border-warning/30 bg-warning-soft px-4 py-3 text-sm">{warnings.map((w) => <li key={w}>⚠ {w}</li>)}</ul> : null}
       <div className="mb-6 grid gap-4 sm:grid-cols-2 xl:grid-cols-5">
         <Stat label="قاعدة البيانات" value={`${dbMs} ms`} />
-        <Stat label="مهام بالانتظار" value={numberFmt.format(count("PENDING"))} />
-        <Stat label="مهام فاشلة" value={numberFmt.format(count("FAILED"))} />
+        <Stat label="مهام بالانتظار" value={numberFmt.format(queued)} />
+        <Stat label="مهام فاشلة" value={numberFmt.format(failedCount)} />
         <Stat label="مدفوعات معلقة > 30 دقيقة" value={numberFmt.format(stuckPayments)} />
         <Stat label="طلبات بانتظار الدفع" value={numberFmt.format(pendingOrders)} />
       </div>

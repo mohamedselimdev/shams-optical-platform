@@ -65,7 +65,8 @@ function load(): Env {
     const issues = parsed.error.issues.map((i) => `${i.path.join(".")}: ${i.message}`).join("; ");
     throw new Error(`Invalid environment configuration: ${issues}`);
   }
-  if (parsed.data.NODE_ENV === "production") {
+  // Runtime guards only; `next build` also runs with NODE_ENV=production but serves no traffic.
+  if (parsed.data.NODE_ENV === "production" && process.env.NEXT_PHASE !== "phase-production-build") {
     if (parsed.data.BETTER_AUTH_SECRET.startsWith("dev-only")) {
       throw new Error("Refusing to start in production with the development auth secret");
     }

@@ -238,3 +238,13 @@ export async function listMyReturns(customerId: string) {
     include: { order: { select: { number: true } }, items: { include: { orderItem: { select: { productName: true, variantName: true } } } } },
   });
 }
+
+/** Which items of a delivered order the customer may still request to return (same rules as createReturn). */
+export async function customerReturnOptions(order: { status: string; completedAt: Date | null; items: { id: string; returnable: boolean; quantity: number; returnedQuantity: number }[] }) {
+  const policy = await getSetting("returns");
+  const within = order.status === "DELIVERED" && order.completedAt !== null && (Date.now() - order.completedAt.getTime()) / 86_400_000 <= policy.windowDays;
+  const itemIds = within && policy.allowCustomerRequests
+    ? order.items.filter((i) => (i.returnable || policy.allowPrescriptionLensReturns) && i.quantity - i.returnedQuantity > 0).map((i) => i.id)
+    : [];
+  return { windowDays: policy.windowDays, itemIds };
+}

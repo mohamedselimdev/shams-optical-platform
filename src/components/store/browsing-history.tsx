@@ -1,7 +1,8 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useSyncExternalStore } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import type { ProductCard as Card } from "@/modules/catalog/queries";
 import { ProductGrid } from "./product-card";
 import { track } from "./analytics";
@@ -56,15 +57,33 @@ export function RecentlyViewed({ exclude }: { exclude?: string }) {
   );
 }
 
+const compareListeners = new Set<() => void>();
+const subscribeCompare = (cb: () => void) => {
+  compareListeners.add(cb);
+  window.addEventListener("storage", cb);
+  return () => {
+    compareListeners.delete(cb);
+    window.removeEventListener("storage", cb);
+  };
+};
+// Snapshot must be referentially stable between reads: return the raw string.
+const compareSnapshot = () => {
+  try {
+    return localStorage.getItem(COMPARE) ?? "[]";
+  } catch {
+    return "[]";
+  }
+};
+
 export function CompareButton({ id }: { id: string }) {
-  const [list, setList] = useState<string[] | null>(null);
-  useEffect(() => setList(read(COMPARE)), []);
-  if (list === null) return null;
+  const raw = useSyncExternalStore(subscribeCompare, compareSnapshot, () => null);
+  if (raw === null) return null;
+  const list = read(COMPARE);
   const inList = list.includes(id);
   const toggle = () => {
     const next = inList ? list.filter((x) => x !== id) : [...list, id].slice(-MAX_COMPARE);
     write(COMPARE, next);
-    setList(next);
+    compareListeners.forEach((l) => l());
     if (!inList) track({ name: "compare_add", productId: id });
   };
   return (
@@ -78,8 +97,9 @@ export function CompareButton({ id }: { id: string }) {
 }
 
 export function ClearCompare() {
+  const router = useRouter();
   return (
-    <button type="button" onClick={() => { write(COMPARE, []); window.location.href = "/shop"; }} className="text-sm text-ink-muted underline">
+    <button type="button" onClick={() => { write(COMPARE, []); router.push("/shop"); }} className="text-sm text-ink-muted underline">
       مسح المقارنة
     </button>
   );
