@@ -1,6 +1,6 @@
 "use client";
 
-import { createContext, useActionState, useContext, useEffect, useRef, type ReactNode } from "react";
+import { createContext, startTransition, useActionState, useContext, useEffect, useRef, type FormEvent, type ReactNode } from "react";
 import type { ActionResult } from "@/server/action";
 import { cn } from "./cn";
 
@@ -9,6 +9,9 @@ export type FormAction = (prev: State, formData: FormData) => Promise<State>;
 
 const FormStateContext = createContext<State>(null);
 export const useFormState = () => useContext(FormStateContext);
+const FormPendingContext = createContext(false);
+/** True while the enclosing ActionForm's action is running. */
+export const useFormPending = () => useContext(FormPendingContext);
 
 /**
  * Progressive-enhancement form bound to a server action. Field components read validation
@@ -29,17 +32,28 @@ export function ActionForm({
   showSuccess?: boolean;
   id?: string;
 }) {
-  const [state, formAction] = useActionState(action, null);
+  const [state, formAction, pending] = useActionState(action, null);
   const ref = useRef<HTMLFormElement>(null);
   useEffect(() => {
     if (state?.ok && resetOnSuccess) ref.current?.reset();
   }, [state, resetOnSuccess]);
+  // With JavaScript, submit manually so React does not reset uncontrolled fields after the action
+  // (users keep their input when validation fails). Without JavaScript, the native action still works.
+  const onSubmit = (e: FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    if (pending) return;
+    const submitter = (e.nativeEvent as SubmitEvent).submitter as HTMLElement | null;
+    const data = new FormData(e.currentTarget, submitter);
+    startTransition(() => formAction(data));
+  };
   return (
     <FormStateContext.Provider value={state}>
-      <form ref={ref} action={formAction} className={className} id={id} noValidate>
-        <FormStatus state={state} showSuccess={showSuccess} />
-        {children}
-      </form>
+      <FormPendingContext.Provider value={pending}>
+        <form ref={ref} action={formAction} onSubmit={onSubmit} className={className} id={id} noValidate>
+          <FormStatus state={state} showSuccess={showSuccess} />
+          {children}
+        </form>
+      </FormPendingContext.Provider>
     </FormStateContext.Provider>
   );
 }

@@ -48,7 +48,7 @@ export const productSchema = z.object({
   collectionIds: z.array(z.string()).default([]),
   variants: z.array(variantSchema).min(1, "أضف متغيراً واحداً على الأقل"),
   images: z
-    .array(z.object({ url: z.string().trim().min(1).max(500), alt: z.string().trim().max(160).optional(), mediaId: z.string().optional() }))
+    .array(z.object({ url: z.string().trim().max(500).refine((u) => (u.startsWith("/") && !u.startsWith("//")) || u.startsWith("https://"), "رابط الصورة يجب أن يبدأ بـ / أو https://"), alt: z.string().trim().max(160).optional(), mediaId: z.string().optional() }))
     .default([]),
 });
 
@@ -206,4 +206,65 @@ export async function saveTaxonomy(actor: Actor, kind: TaxonomyKind, id: string 
     await audit(tx, actor, { action: "product.update", entityType: kind, entityId: row.id, after: data });
     return row;
   });
+}
+
+export type AdminProductFilter = { q?: string; status?: string; type?: string; brandId?: string; page?: number };
+
+export async function listProductsAdmin(actor: Actor, f: AdminProductFilter) {
+  assertCan(actor, "catalog.read");
+  const page = Math.max(f.page ?? 1, 1);
+  const q = f.q?.trim().slice(0, 80);
+  const where = {
+    ...(f.status ? { status: f.status as "DRAFT" | "ACTIVE" | "ARCHIVED" } : {}),
+    ...(f.type ? { type: f.type as "FRAME" } : {}),
+    ...(f.brandId ? { brandId: f.brandId } : {}),
+    ...(q
+      ? { OR: [{ name: { contains: q, mode: "insensitive" as const } }, { nameEn: { contains: q, mode: "insensitive" as const } }, { variants: { some: { OR: [{ sku: { contains: q.toUpperCase() } }, { barcode: q }] } } }] }
+      : {}),
+  };
+  const [items, total] = await Promise.all([
+    db.product.findMany({
+      where,
+      include: {
+        brand: { select: { name: true } },
+        category: { select: { name: true } },
+        images: { take: 1, orderBy: { sortOrder: "asc" } },
+        variants: { select: { id: true, isActive: true, inventory: { select: { onHand: true, reserved: true } } } },
+      },
+      orderBy: { updatedAt: "desc" },
+      skip: (page - 1) * 25,
+      take: 25,
+    }),
+    db.product.count({ where }),
+  ]);
+  return {
+    items: items.map((p) => ({
+      ...p,
+      activeVariants: p.variants.filter((v) => v.isActive).length,
+      available: p.variants.reduce((s, v) => s + v.inventory.reduce((a, i) => a + i.onHand - i.reserved, 0), 0),
+    })),
+    total,
+    page,
+    pageSize: 25,
+  };
+}
+
+export async function getProductForEdit(actor: Actor, id: string) {
+  assertCan(actor, "catalog.read");
+  const product = await db.product.findUnique({
+    where: { id },
+    include: { variants: { orderBy: { sortOrder: "asc" } }, images: { orderBy: { sortOrder: "asc" } }, collections: true },
+  });
+  if (!product) throw notFound("المنتج");
+  return product;
+}
+
+export async function catalogFormOptions() {
+  const [brands, categories, collections, suppliers] = await Promise.all([
+    db.brand.findMany({ orderBy: { name: "asc" }, select: { id: true, name: true } }),
+    db.category.findMany({ orderBy: [{ sortOrder: "asc" }, { name: "asc" }], select: { id: true, name: true, parentId: true } }),
+    db.collection.findMany({ orderBy: { name: "asc" }, select: { id: true, name: true } }),
+    db.supplier.findMany({ where: { isActive: true }, orderBy: { name: "asc" }, select: { id: true, name: true } }),
+  ]);
+  return { brands, categories, collections, suppliers };
 }

@@ -60,3 +60,33 @@ export async function runAction<T>(fn: () => Promise<T>, successMessage?: string
     return { ok: false, code: "INTERNAL", error: `حدث خطأ غير متوقع (رمز: ${incident})` };
   }
 }
+
+/**
+ * Convert FormData with dotted keys ("variants.0.sku") into nested objects/arrays. Sparse array
+ * indexes (rows removed client-side) are compacted. Keys ending in "[]" collect repeated values.
+ */
+export function formToNested(form: FormData): Record<string, unknown> {
+  const root: Record<string, unknown> = {};
+  for (const [rawKey, value] of form.entries()) {
+    if (rawKey.startsWith("$ACTION") || value instanceof File) continue;
+    const multi = rawKey.endsWith("[]");
+    const parts = (multi ? rawKey.slice(0, -2) : rawKey).split(".");
+    if (parts.some((p) => p === "__proto__" || p === "constructor" || p === "prototype")) continue;
+    let node: Record<string, unknown> = root;
+    for (let i = 0; i < parts.length - 1; i++) {
+      node[parts[i]] ??= {};
+      node = node[parts[i]] as Record<string, unknown>;
+    }
+    const leaf = parts[parts.length - 1];
+    if (multi) ((node[leaf] ??= []) as unknown[]).push(value);
+    else node[leaf] = value;
+  }
+  const compact = (v: unknown): unknown => {
+    if (!v || typeof v !== "object" || Array.isArray(v)) return Array.isArray(v) ? v.map(compact) : v;
+    const obj = v as Record<string, unknown>;
+    const keys = Object.keys(obj);
+    if (keys.length && keys.every((k) => /^\d+$/.test(k))) return keys.sort((a, b) => Number(a) - Number(b)).map((k) => compact(obj[k]));
+    return Object.fromEntries(keys.map((k) => [k, compact(obj[k])]));
+  };
+  return compact(root) as Record<string, unknown>;
+}
