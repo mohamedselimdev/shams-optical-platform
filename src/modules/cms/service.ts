@@ -42,7 +42,7 @@ export const bannerSchema = z.object({
   subtitle: z.string().trim().max(240).optional().transform((v) => v || null),
   ctaLabel: z.string().trim().max(40).optional().transform((v) => v || null),
   ctaHref: optionalHref,
-  imageUrl: z.string().trim().max(500).optional().transform((v) => v || null),
+  imageUrl: z.string().trim().max(500).optional().transform((v) => v || null).refine((u) => u === null || (u.startsWith("/") && !u.startsWith("//")) || u.startsWith("https://"), "رابط الصورة يجب أن يبدأ بـ / أو https://"),
   startsAt: z.union([z.literal(""), z.coerce.date()]).optional().transform((v) => (v ? v : null)),
   endsAt: z.union([z.literal(""), z.coerce.date()]).optional().transform((v) => (v ? v : null)),
   sortOrder: z.coerce.number().int().min(0).max(1000).default(0),

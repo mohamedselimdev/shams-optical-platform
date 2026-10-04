@@ -175,7 +175,9 @@ const taxonomySchema = z.object({
 });
 
 export const categorySchema = taxonomySchema.extend({ parentId: z.string().optional().transform((v) => v || null) });
-export const brandSchema = taxonomySchema.extend({ logoUrl: zOptionalText(500) });
+export const brandSchema = taxonomySchema.extend({
+  logoUrl: zOptionalText(500).refine((u) => u === null || (u.startsWith("/") && !u.startsWith("//")) || u.startsWith("https://"), "رابط الشعار يجب أن يبدأ بـ / أو https://"),
+});
 export const collectionSchema = taxonomySchema;
 
 type TaxonomyKind = "category" | "brand" | "collection";
