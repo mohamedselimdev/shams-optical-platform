@@ -213,3 +213,19 @@ export async function listReturns(actor: StaffActor, filter: { status?: ReturnSt
   ]);
   return { items, total, page, pageSize: 30 };
 }
+
+export async function getReturnForStaff(actor: StaffActor, id: string) {
+  assertCan(actor, "returns.read");
+  const r = await db.returnRequest.findFirst({
+    where: { id, ...branchScope(actor) },
+    include: {
+      order: { select: { id: true, number: true, fulfillmentBranchId: true, paidTotal: true, refundedTotal: true } },
+      customer: { select: { id: true, firstName: true, lastName: true, phone: true } },
+      branch: { select: { name: true } },
+      items: { include: { orderItem: { select: { productName: true, sku: true, quantity: true, lineTotal: true, variantName: true } } } },
+      events: { orderBy: { createdAt: "asc" } },
+    },
+  });
+  if (!r) throw notFound("طلب الإرجاع");
+  return { ...r, estimatedRefund: Math.min(computeReturnRefund(r.items), r.order.paidTotal - r.order.refundedTotal) };
+}

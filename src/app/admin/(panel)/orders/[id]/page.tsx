@@ -14,6 +14,7 @@ import { Badge, Card, CardBody, CardHeader, DateText, DefinitionList, Money, Tab
 import { ATTEMPT_STATUS_LABELS, CHANNEL_LABELS, FULFILLMENT_LABELS, ORDER_STATUS_LABELS, PAYMENT_METHOD_LABELS, PAYMENT_STATUS_LABELS, REFUND_STATUS_LABELS, RETURN_STATUS_LABELS, RX_MODE_LABELS } from "@/i18n/labels";
 import { attemptTone, orderTone, paymentTone, returnTone } from "@/i18n/tones";
 import { noteAction, refundAction, transitionAction } from "./actions";
+import { staffCreateReturnAction } from "../../returns/actions";
 
 type Addr = { fullName?: string; phone?: string; governorate?: string; city?: string; area?: string; street?: string; building?: string; floor?: string; apartment?: string; landmark?: string };
 
@@ -258,6 +259,27 @@ export default async function OrderDetail({ params }: { params: Promise<{ id: st
               ))}
             </CardBody>
           </Card>
+
+          {order.status === "DELIVERED" && can(actor, "returns.manage", order.fulfillmentBranchId) ? (
+            <Card>
+              <CardHeader title="تسجيل مرتجع" />
+              <CardBody>
+                <ActionForm action={staffCreateReturnAction} className="space-y-3">
+                  <input type="hidden" name="orderId" value={order.id} />
+                  {order.items.map((it, i) => (
+                    <div key={it.id} className="flex items-center justify-between gap-2 text-sm">
+                      <input type="hidden" name={`items.${i}.orderItemId`} value={it.id} />
+                      <span className="min-w-0 truncate">{it.productName}{!it.returnable ? " (عدسات مصنّعة)" : ""}</span>
+                      <input name={`items.${i}.quantity`} defaultValue={0} inputMode="numeric" dir="ltr" className="h-8 w-16 rounded border border-line-strong px-2" aria-label={`كمية ${it.productName}`} />
+                    </div>
+                  ))}
+                  <SelectField label="الحل" name="resolution" options={[{ value: "REFUND", label: "استرداد المبلغ" }, { value: "EXCHANGE", label: "استبدال" }]} />
+                  <TextField label="السبب" name="reason" required />
+                  <SubmitButton size="sm" variant="secondary">إنشاء طلب إرجاع</SubmitButton>
+                </ActionForm>
+              </CardBody>
+            </Card>
+          ) : null}
 
           {order.returns.length || order.redemptions.length ? (
             <Card>
