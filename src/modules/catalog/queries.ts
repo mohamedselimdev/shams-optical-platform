@@ -188,3 +188,53 @@ export async function productCardsByIds(ids: string[]) {
   const map = new Map(rows.map((r) => [r.id, toProductCard(r)]));
   return ids.map((id) => map.get(id)).filter((p): p is ProductCard => Boolean(p));
 }
+
+/** Product rail for a CMS home section. Unknown section types return nothing. */
+export async function homeRail(type: string, config: { limit?: number; collectionSlug?: string }) {
+  const take = Math.min(Math.max(config.limit ?? 8, 2), 24);
+  const base: Prisma.ProductWhereInput = { status: "ACTIVE", variants: { some: { isActive: true } } };
+  const query = (where: Prisma.ProductWhereInput, order: Prisma.ProductOrderByWithRelationInput[]) =>
+    db.product.findMany({ where: { ...base, ...where }, select: productCardSelect, orderBy: order, take }).then((rows) => rows.map(toProductCard));
+  switch (type) {
+    case "FEATURED_PRODUCTS":
+      return query({ isFeatured: true }, [{ salesCount: "desc" }, { id: "asc" }]);
+    case "NEW_ARRIVALS":
+      return query({}, orderBy.newest);
+    case "BEST_SELLERS":
+      return query({}, orderBy.popular);
+    case "COLLECTION":
+      return config.collectionSlug ? query({ collections: { some: { collection: { slug: config.collectionSlug } } } }, orderBy.popular) : [];
+    default:
+      return [];
+  }
+}
+
+export async function storefrontTaxonomy() {
+  const [categories, brands] = await Promise.all([
+    db.category.findMany({ where: { isActive: true, parentId: null }, select: { slug: true, name: true, description: true }, orderBy: { sortOrder: "asc" } }),
+    db.brand.findMany({ where: { isActive: true, products: { some: { status: "ACTIVE" } } }, select: { slug: true, name: true, logoUrl: true }, orderBy: [{ sortOrder: "asc" }, { name: "asc" }] }),
+  ]);
+  return { categories, brands };
+}
+
+export async function taxonomyBySlug(kind: "category" | "brand" | "collection", slug: string) {
+  const where = { slug, isActive: true };
+  if (kind === "category") return db.category.findFirst({ where, select: { name: true, description: true, slug: true, parent: { select: { name: true, slug: true } } } });
+  if (kind === "brand") return db.brand.findFirst({ where, select: { name: true, description: true, slug: true } });
+  return db.collection.findFirst({ where, select: { name: true, description: true, slug: true } });
+}
+
+/**
+ * Per-branch availability for a product's variants, for "available at branch" display.
+ * Exposes only a coarse level (none / low / in stock), never exact counts.
+ */
+export async function branchAvailability(productId: string) {
+  const rows = await db.inventoryItem.findMany({
+    where: { variant: { productId, isActive: true }, branch: { isActive: true, type: "STORE" } },
+    select: { variantId: true, branchId: true, onHand: true, reserved: true },
+  });
+  return rows.map((r) => {
+    const free = r.onHand - r.reserved;
+    return { variantId: r.variantId, branchId: r.branchId, level: free <= 0 ? ("none" as const) : free <= 2 ? ("low" as const) : ("ok" as const) };
+  });
+}

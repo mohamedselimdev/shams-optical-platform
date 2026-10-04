@@ -69,6 +69,9 @@ function load(): Env {
     if (parsed.data.BETTER_AUTH_SECRET.startsWith("dev-only")) {
       throw new Error("Refusing to start in production with the development auth secret");
     }
+    if (parsed.data.PAYMENT_SANDBOX_ENABLED && parsed.data.PAYMENT_SANDBOX_SECRET.includes("dev-only")) {
+      throw new Error("Refusing to start in production with the sandbox payment provider on its default secret; set PAYMENT_SANDBOX_ENABLED=false");
+    }
   }
   return parsed.data;
 }

@@ -140,3 +140,15 @@ export const LENS_GROUP_LABELS: Record<LensOptionGroup, string> = {
   POLARIZATION: "استقطاب",
 };
 export const RX_MODE_LABELS: Record<PrescriptionMode, string> = { NONE: "بدون وصفة", UPLOADED: "صورة وصفة مرفوعة", ENTERED: "قيم مُدخلة", SAVED: "وصفة محفوظة" };
+
+/** Frame shapes are stored as stable keys; unknown keys fall back to the raw value. */
+export const FRAME_SHAPE_LABELS: Record<string, string> = {
+  round: "دائري",
+  square: "مربع",
+  rectangle: "مستطيل",
+  "cat-eye": "عين القطة",
+  aviator: "طيار",
+  oval: "بيضاوي",
+  browline: "براولاين",
+};
+export const shapeLabel = (s: string | null | undefined) => (s ? (FRAME_SHAPE_LABELS[s] ?? s) : "");
