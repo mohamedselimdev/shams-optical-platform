@@ -30,6 +30,14 @@ describe("point of sale", () => {
     expect(sale2?.quantity).toBe(-2);
     await assertLedgerConsistent();
 
+    // A walk-in customer who also has an active web cart can buy in store; the web cart is untouched.
+    const customer = await db.customer.create({ data: { firstName: "منى", phone: "01077778888" } });
+    const webCart = await db.cart.create({ data: { token: key(), customerId: customer.id, items: { create: [{ variantId: variant.id, quantity: 1 }] } } });
+    const linked = await placePosSale(cashier, { idempotencyKey: key(), branchId: branch.id, items: [{ variantId: variant.id, quantity: 1 }], paymentMethod: "CARD_PRESENT", customerPhone: "01077778888" });
+    expect((await db.order.findUniqueOrThrow({ where: { id: linked.orderId } })).customerId).toBe(customer.id);
+    expect((await db.cart.findUniqueOrThrow({ where: { id: webCart.id } })).status).toBe("ACTIVE");
+    await stock(branch.id, variant.id, 1);
+
     // Re-submitting the same sale never charges or deducts twice.
     const dup = await placePosSale(cashier, { idempotencyKey: idem, branchId: branch.id, items: [{ variantId: variant.id, quantity: 2 }], paymentMethod: "CASH", cashTendered: "3500" });
     expect(dup).toMatchObject({ orderId: sale.orderId, duplicate: true });

@@ -73,10 +73,11 @@ export async function placePosSale(actor: StaffActor, input: PosSaleInput): Prom
         if (customer) await tx.$queryRaw`SELECT "id" FROM "customer" WHERE "id" = ${customer.id} FOR UPDATE`;
 
         // A transient cart lets POS reuse the web quote engine and order snapshot builder unchanged.
+        // It is never linked to the customer, so their own active web cart is left untouched.
         const merged = new Map<string, number>();
         for (const i of data.items) merged.set(i.variantId, (merged.get(i.variantId) ?? 0) + i.quantity);
         const created = await tx.cart.create({
-          data: { token: newCartToken(), customerId: customer?.id ?? null, status: "ACTIVE", items: { create: [...merged].map(([variantId, quantity]) => ({ variantId, quantity })) } },
+          data: { token: newCartToken(), customerId: null, status: "ACTIVE", items: { create: [...merged].map(([variantId, quantity]) => ({ variantId, quantity })) } },
         });
         const cart = await tx.cart.findUniqueOrThrow({ where: { id: created.id }, include: { items: { include: cartItemInclude, orderBy: { createdAt: "asc" } } } });
 
