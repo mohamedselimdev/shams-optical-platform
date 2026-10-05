@@ -1,7 +1,7 @@
 import Link from "next/link";
 import type { ComponentProps, ReactNode } from "react";
 import { cn } from "./cn";
-import { formatMoney } from "@/lib/money";
+import { Num } from "./localized";
 
 const tones = {
   neutral: "bg-surface-2 text-ink-soft border-line",
@@ -41,22 +41,7 @@ export function CardBody({ className, children }: { className?: string; children
   return <div className={cn("p-5", className)}>{children}</div>;
 }
 
-export function Money({ value, className, strike }: { value: number; className?: string; strike?: boolean }) {
-  return <span className={cn("num whitespace-nowrap", strike && "text-ink-faint line-through", className)}>{formatMoney(value)}</span>;
-}
-
-const dateFmt = new Intl.DateTimeFormat("ar-EG", { dateStyle: "medium", timeZone: "Africa/Cairo" });
-const dateTimeFmt = new Intl.DateTimeFormat("ar-EG", { dateStyle: "medium", timeStyle: "short", timeZone: "Africa/Cairo" });
-export function formatDate(d: Date | string, withTime = false) {
-  return (withTime ? dateTimeFmt : dateFmt).format(typeof d === "string" ? new Date(d) : d);
-}
-export function DateText({ value, withTime }: { value: Date | string; withTime?: boolean }) {
-  const d = typeof value === "string" ? new Date(value) : value;
-  return <time dateTime={d.toISOString()}>{formatDate(d, withTime)}</time>;
-}
-
-export const numberFmt = new Intl.NumberFormat("ar-EG");
-export const percentFmt = new Intl.NumberFormat("ar-EG", { style: "percent", maximumFractionDigits: 1 });
+export { Money, DateText, Num, T } from "./localized";
 
 export function EmptyState({ title, description, action }: { title: string; description?: string; action?: ReactNode }) {
   return (
@@ -87,7 +72,7 @@ export function Pagination({ page, pageCount, basePath, params }: { page: number
         <span key={p} className="flex items-center">
           {i > 0 && p - pages[i - 1] > 1 ? <span className="px-1 text-ink-faint">…</span> : null}
           <Link href={href(p)} aria-current={p === page ? "page" : undefined} className={cn("num min-w-9 rounded-md px-3 py-1.5 text-center text-sm", p === page ? "bg-ink text-surface" : "hover:bg-surface-2")}>
-            {numberFmt.format(p)}
+            <Num value={p} />
           </Link>
         </span>
       ))}

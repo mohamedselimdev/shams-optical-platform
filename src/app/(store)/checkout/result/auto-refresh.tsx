@@ -8,12 +8,12 @@ export function AutoRefresh({ intervalMs = 3000, max = 10 }: { intervalMs?: numb
   const router = useRouter();
   useEffect(() => {
     let n = 0;
-    const t = setInterval(() => {
+    const timer = setInterval(() => {
       n += 1;
       router.refresh();
-      if (n >= max) clearInterval(t);
+      if (n >= max) clearInterval(timer);
     }, intervalMs);
-    return () => clearInterval(t);
+    return () => clearInterval(timer);
   }, [router, intervalMs, max]);
   return null;
 }

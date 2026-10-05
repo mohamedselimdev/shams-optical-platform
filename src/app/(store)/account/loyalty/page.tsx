@@ -12,7 +12,7 @@ export default async function Loyalty() {
   return (
     <div className="space-y-6">
       <h1 className="font-display text-2xl font-semibold">نقاط الولاء</h1>
-      <div className="rounded-xl bg-ink p-6 text-surface">
+      <div className="rounded-xl bg-night p-6 text-on-night">
         <p className="text-sm text-surface/70">رصيدك الحالي</p>
         <p className="num mt-1 font-display text-4xl font-bold text-sun-300">{h.balance} <span className="text-lg">نقطة</span></p>
         <p className="mt-2 text-sm text-surface/80">تساوي <Money value={h.balance * s.pointValuePiasters} /> · تكسب {s.pointsPerEgp} نقطة لكل جنيه بعد استلام الطلب، ويمكن الاستبدال من {s.minRedeemPoints} نقطة.</p>
@@ -22,12 +22,12 @@ export default async function Loyalty() {
           <Table>
             <thead><tr><Th>التاريخ</Th><Th>العملية</Th><Th>الطلب</Th><Th>النقاط</Th></tr></thead>
             <tbody>
-              {h.transactions.map((t) => (
-                <tr key={t.id}>
-                  <Td><DateText value={t.createdAt} /></Td>
-                  <Td>{LOYALTY_TX_LABELS[t.type]}</Td>
-                  <Td dir="ltr" className="num text-start">{t.order?.number ?? "—"}</Td>
-                  <Td className={`num ${t.points > 0 ? "text-success" : "text-danger"}`} dir="ltr">{t.points > 0 ? `+${t.points}` : t.points}</Td>
+              {h.transactions.map((tx) => (
+                <tr key={tx.id}>
+                  <Td><DateText value={tx.createdAt} /></Td>
+                  <Td>{LOYALTY_TX_LABELS[tx.type]}</Td>
+                  <Td dir="ltr" className="num text-start">{tx.order?.number ?? "—"}</Td>
+                  <Td className={`num ${tx.points > 0 ? "text-success" : "text-danger"}`} dir="ltr">{tx.points > 0 ? `+${tx.points}` : tx.points}</Td>
                 </tr>
               ))}
             </tbody>

@@ -33,14 +33,14 @@ export default async function TransfersPage({ searchParams }: { searchParams: Pr
           <Table>
             <thead><tr><Th>الرقم</Th><Th>من</Th><Th>إلى</Th><Th>البنود</Th><Th>الحالة</Th><Th>التاريخ</Th></tr></thead>
             <tbody>
-              {items.map((t) => (
-                <tr key={t.id}>
-                  <Td><Link href={`/admin/transfers/${t.id}`} className="num font-medium text-sun-700 hover:underline">{t.number}</Link></Td>
-                  <Td>{t.fromBranch.name}</Td>
-                  <Td>{t.toBranch.name}</Td>
-                  <Td className="num">{numberFmt.format(t._count.items)}</Td>
-                  <Td><Badge tone={transferTone[t.status]}>{TRANSFER_STATUS_LABELS[t.status]}</Badge></Td>
-                  <Td><DateText value={t.createdAt} withTime /></Td>
+              {items.map((transfer) => (
+                <tr key={transfer.id}>
+                  <Td><Link href={`/admin/transfers/${transfer.id}`} className="num font-medium text-sun-700 hover:underline">{transfer.number}</Link></Td>
+                  <Td>{transfer.fromBranch.name}</Td>
+                  <Td>{transfer.toBranch.name}</Td>
+                  <Td className="num">{numberFmt.format(transfer._count.items)}</Td>
+                  <Td><Badge tone={transferTone[transfer.status]}>{TRANSFER_STATUS_LABELS[transfer.status]}</Badge></Td>
+                  <Td><DateText value={transfer.createdAt} withTime /></Td>
                 </tr>
               ))}
             </tbody>

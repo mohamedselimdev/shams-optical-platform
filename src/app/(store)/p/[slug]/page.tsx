@@ -117,7 +117,7 @@ export default async function ProductPage({ params }: Props) {
             productId={product.id}
             variants={product.variants.map((v) => ({ id: v.id, sku: v.sku, colorName: v.colorName, colorHex: v.colorHex, sizeLabel: v.sizeLabel, price: v.price, effectivePrice: v.effectivePrice, available: v.available, lensWidthMm: v.lensWidthMm, bridgeMm: v.bridgeMm, templeMm: v.templeMm }))}
             lens={lens ? {
-              types: lens.types.map((t) => ({ id: t.id, name: t.name, description: t.description, requiresPrescription: t.requiresPrescription, requiresAdd: t.requiresAdd })),
+              types: lens.types.map((lensType) => ({ id: lensType.id, name: lensType.name, description: lensType.description, requiresPrescription: lensType.requiresPrescription, requiresAdd: lensType.requiresAdd })),
               indexes: lens.indexes.map((i) => ({ id: i.id, name: i.name, description: i.description })),
               prices: lens.prices,
               options: lens.options.map((o) => ({ id: o.id, name: o.name, description: o.description, group: o.group, price: o.price, exclusive: o.exclusive, lensTypeIds: o.lensTypeIds })),

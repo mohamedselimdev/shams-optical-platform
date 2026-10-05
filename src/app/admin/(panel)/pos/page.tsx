@@ -105,10 +105,10 @@ export default async function PosPage({ searchParams }: { searchParams: Promise<
           <CardBody className="space-y-4">
             {summary.totals.length ? (
               <ul className="space-y-1 text-sm">
-                {summary.totals.map((t) => (
-                  <li key={t.method} className="flex justify-between">
-                    <span>{PAYMENT_METHOD_LABELS[t.method]} <span className="text-ink-muted">({numberFmt.format(t.count)})</span></span>
-                    <Money value={t.total} />
+                {summary.totals.map((row) => (
+                  <li key={row.method} className="flex justify-between">
+                    <span>{PAYMENT_METHOD_LABELS[row.method]} <span className="text-ink-muted">({numberFmt.format(row.count)})</span></span>
+                    <Money value={row.total} />
                   </li>
                 ))}
               </ul>

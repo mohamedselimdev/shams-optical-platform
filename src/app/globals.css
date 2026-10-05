@@ -31,6 +31,10 @@
   --color-line: #e6dfd2;
   --color-line-strong: #d3c9b8;
 
+  /* Always-dark brand surfaces (hero, admin sidebar) keep their look in both themes. */
+  --color-night: #17140f;
+  --color-on-night: #fffdf9;
+
   --color-clay: #b4573a;
   --color-nile: #1f5f6b;
 
@@ -63,6 +67,102 @@
   @keyframes fade-in {
     from { opacity: 0; transform: translateY(4px); }
     to { opacity: 1; transform: none; }
+  }
+}
+
+/*
+ * Dark theme. Applied when the visitor picks it (data-theme="dark") or, with no explicit choice,
+ * when the operating system prefers dark. Only token values change; components stay theme-agnostic.
+ */
+:root { color-scheme: light; }
+:root[data-theme="dark"] {
+    color-scheme: dark;
+    --color-sun-50: #2a2213;
+    --color-sun-100: #362a14;
+    --color-sun-200: #4f3c17;
+    --color-sun-700: #e9c155;
+    --color-sun-800: #f2d98d;
+    --color-sun-900: #f9edc8;
+
+    --color-ink: #f3ede2;
+    --color-ink-soft: #d8cfc0;
+    --color-ink-muted: #a59b8b;
+    --color-ink-faint: #7b7264;
+
+    --color-canvas: #100e0b;
+    --color-surface: #1a1712;
+    --color-surface-2: #242019;
+    --color-line: #332e25;
+    --color-line-strong: #4a4336;
+
+    --color-night: #0b0a08;
+    --color-on-night: #fffdf9;
+
+    --color-clay: #d0765a;
+    --color-nile: #2f7d8a;
+
+    --color-success: #6cc08f;
+    --color-success-soft: #15261b;
+    --color-warning: #e3a64a;
+    --color-warning-soft: #2c2010;
+    --color-danger: #ec7d70;
+    --color-danger-soft: #2f1613;
+    --color-info: #7fb2e0;
+    --color-info-soft: #13212e;
+
+    --color-chart-1: #e0a838;
+    --color-chart-2: #5aa3b0;
+    --color-chart-3: #d0765a;
+    --color-chart-4: #9d8bd0;
+    --color-chart-5: #8cbc66;
+
+    --shadow-card: 0 1px 2px rgb(0 0 0 / 0.4), 0 4px 16px rgb(0 0 0 / 0.3);
+    --shadow-pop: 0 8px 32px rgb(0 0 0 / 0.5);
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    color-scheme: dark;
+    --color-sun-50: #2a2213;
+    --color-sun-100: #362a14;
+    --color-sun-200: #4f3c17;
+    --color-sun-700: #e9c155;
+    --color-sun-800: #f2d98d;
+    --color-sun-900: #f9edc8;
+
+    --color-ink: #f3ede2;
+    --color-ink-soft: #d8cfc0;
+    --color-ink-muted: #a59b8b;
+    --color-ink-faint: #7b7264;
+
+    --color-canvas: #100e0b;
+    --color-surface: #1a1712;
+    --color-surface-2: #242019;
+    --color-line: #332e25;
+    --color-line-strong: #4a4336;
+
+    --color-night: #0b0a08;
+    --color-on-night: #fffdf9;
+
+    --color-clay: #d0765a;
+    --color-nile: #2f7d8a;
+
+    --color-success: #6cc08f;
+    --color-success-soft: #15261b;
+    --color-warning: #e3a64a;
+    --color-warning-soft: #2c2010;
+    --color-danger: #ec7d70;
+    --color-danger-soft: #2f1613;
+    --color-info: #7fb2e0;
+    --color-info-soft: #13212e;
+
+    --color-chart-1: #e0a838;
+    --color-chart-2: #5aa3b0;
+    --color-chart-3: #d0765a;
+    --color-chart-4: #9d8bd0;
+    --color-chart-5: #8cbc66;
+
+    --shadow-card: 0 1px 2px rgb(0 0 0 / 0.4), 0 4px 16px rgb(0 0 0 / 0.3);
+    --shadow-pop: 0 8px 32px rgb(0 0 0 / 0.5);
   }
 }
 

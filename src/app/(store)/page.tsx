@@ -36,17 +36,17 @@ export default async function Home() {
   return (
     <>
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd).replace(/</g, "\\u003c") }} />
-      <section className="relative overflow-hidden bg-ink text-surface">
+      <section className="relative overflow-hidden bg-night text-on-night">
         <div className="absolute -end-24 -top-24 h-96 w-96 rounded-full bg-sun-400/90 blur-[2px]" aria-hidden />
         <div className="absolute end-40 top-56 h-24 w-24 rounded-full bg-sun-300/40" aria-hidden />
         <div className="container-page relative grid gap-8 py-16 md:py-24 lg:grid-cols-2">
           <div className="max-w-xl">
             <p className="mb-3 text-sm font-medium text-sun-300">شمس للبصريات</p>
             <h1 className="font-display text-4xl font-bold leading-tight md:text-5xl">{banner?.title ?? "شوف الدنيا بوضوح"}</h1>
-            {banner?.subtitle ? <p className="mt-4 text-lg text-surface/80">{banner.subtitle}</p> : null}
+            {banner?.subtitle ? <p className="mt-4 text-lg text-on-night/80">{banner.subtitle}</p> : null}
             <div className="mt-8 flex flex-wrap gap-3">
               <ButtonLink href={banner?.ctaHref ?? "/shop"} variant="accent" size="lg">{banner?.ctaLabel ?? "تسوّق الآن"}</ButtonLink>
-              <ButtonLink href="/stores" variant="secondary" size="lg" className="border-surface/30 bg-transparent text-surface hover:bg-surface/10">فروعنا</ButtonLink>
+              <ButtonLink href="/stores" variant="secondary" size="lg" className="border-on-night/30 bg-transparent text-on-night hover:bg-on-night/10">فروعنا</ButtonLink>
             </div>
           </div>
           {banner?.imageUrl ? (
@@ -119,9 +119,9 @@ export default async function Home() {
         })}
 
         {promo[0] ? (
-          <section className="rounded-xl bg-nile px-8 py-12 text-surface">
+          <section className="rounded-xl bg-nile px-8 py-12 text-on-night">
             <h2 className="font-display text-3xl font-bold">{promo[0].title}</h2>
-            {promo[0].subtitle ? <p className="mt-2 max-w-xl text-surface/80">{promo[0].subtitle}</p> : null}
+            {promo[0].subtitle ? <p className="mt-2 max-w-xl text-on-night/80">{promo[0].subtitle}</p> : null}
             {promo[0].ctaHref ? <ButtonLink href={promo[0].ctaHref} variant="accent" className="mt-6">{promo[0].ctaLabel ?? "اكتشف"}</ButtonLink> : null}
           </section>
         ) : null}

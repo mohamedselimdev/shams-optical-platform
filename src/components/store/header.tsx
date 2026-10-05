@@ -8,7 +8,7 @@ export function StoreHeader({ nav, cartCount, signedIn, announcements }: { nav: 
   return (
     <header className="sticky top-0 z-30 border-b border-line bg-surface/95 backdrop-blur">
       {announcements.length ? (
-        <div className="bg-ink text-center text-xs text-surface">
+        <div className="bg-night text-center text-xs text-on-night">
           <div className="container-page flex justify-center gap-6 py-2">
             {announcements.slice(0, 2).map((a) =>
               a.href ? <Link key={a.id} href={a.href} className="underline-offset-2 hover:underline">{a.message}</Link> : <p key={a.id}>{a.message}</p>,
@@ -65,7 +65,7 @@ export function StoreHeader({ nav, cartCount, signedIn, announcements }: { nav: 
           </Link>
           <Link href="/cart" className="relative flex h-10 w-10 items-center justify-center rounded-md hover:bg-surface-2" aria-label={`السلة (${cartCount})`}>
             <ShoppingBag className="h-5 w-5" aria-hidden />
-            {cartCount > 0 ? <span className="num absolute -top-0.5 -end-0.5 flex h-5 min-w-5 items-center justify-center rounded-full bg-sun-400 px-1 text-[11px] font-bold text-ink">{cartCount}</span> : null}
+            {cartCount > 0 ? <span className="num absolute -top-0.5 -end-0.5 flex h-5 min-w-5 items-center justify-center rounded-full bg-sun-400 px-1 text-[11px] font-bold text-night">{cartCount}</span> : null}
           </Link>
         </div>
       </div>

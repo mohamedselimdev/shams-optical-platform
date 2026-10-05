@@ -69,13 +69,13 @@ export default async function Customer360({ params }: { params: Promise<{ id: st
             <Table>
               <thead><tr><Th>النوع</Th><Th>النقاط</Th><Th>الرصيد بعدها</Th><Th>السبب</Th><Th>التاريخ</Th></tr></thead>
               <tbody>
-                {loyaltyTx.map((t) => (
-                  <tr key={t.id}>
-                    <Td>{LOYALTY_TX_LABELS[t.type]}</Td>
-                    <Td className="num" dir="ltr">{t.points > 0 ? `+${t.points}` : t.points}</Td>
-                    <Td className="num">{numberFmt.format(t.balanceAfter)}</Td>
-                    <Td className="text-xs">{t.reason ?? "—"}</Td>
-                    <Td><DateText value={t.createdAt} /></Td>
+                {loyaltyTx.map((tx) => (
+                  <tr key={tx.id}>
+                    <Td>{LOYALTY_TX_LABELS[tx.type]}</Td>
+                    <Td className="num" dir="ltr">{tx.points > 0 ? `+${tx.points}` : tx.points}</Td>
+                    <Td className="num">{numberFmt.format(tx.balanceAfter)}</Td>
+                    <Td className="text-xs">{tx.reason ?? "—"}</Td>
+                    <Td><DateText value={tx.createdAt} /></Td>
                   </tr>
                 ))}
               </tbody>

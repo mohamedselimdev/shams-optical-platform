@@ -58,7 +58,7 @@ export function ProductPurchase({ productId, variants, lens, savedRx, signedIn, 
   const [optionIds, setOptionIds] = useState<string[]>([]);
   const [rxSource, setRxSource] = useState<"SAVED" | "ENTERED" | "UPLOADED">(savedRx?.length ? "SAVED" : "ENTERED");
   const variant = variants.find((v) => v.id === variantId)!;
-  const type = lens?.types.find((t) => t.id === typeId) ?? null;
+  const type = lens?.types.find((candidate) => candidate.id === typeId) ?? null;
 
   const indexPrices = useMemo(() => new Map((lens?.prices ?? []).filter((p) => p.lensTypeId === typeId).map((p) => [p.lensIndexId, p.price])), [lens, typeId]);
   const effectiveIndexId = indexPrices.has(indexId) ? indexId : (lens?.indexes.find((i) => indexPrices.has(i.id))?.id ?? "");
@@ -130,10 +130,10 @@ export function ProductPurchase({ productId, variants, lens, savedRx, signedIn, 
               <div>
                 <p className="mb-2 text-sm font-medium">١. نوع العدسة</p>
                 <div className="space-y-2">
-                  {lens.types.map((t) => (
-                    <label key={t.id} className={cn("flex cursor-pointer items-start gap-3 rounded-md border p-3 text-sm", t.id === typeId ? "border-ink bg-surface-2" : "border-line")}>
-                      <input type="radio" name="lensTypeId" value={t.id} checked={t.id === typeId} onChange={() => { setTypeId(t.id); setOptionIds([]); }} className="mt-1 accent-ink" />
-                      <span><span className="font-medium">{t.name}</span>{t.description ? <span className="block text-ink-muted">{t.description}</span> : null}</span>
+                  {lens.types.map((lensType) => (
+                    <label key={lensType.id} className={cn("flex cursor-pointer items-start gap-3 rounded-md border p-3 text-sm", lensType.id === typeId ? "border-ink bg-surface-2" : "border-line")}>
+                      <input type="radio" name="lensTypeId" value={lensType.id} checked={lensType.id === typeId} onChange={() => { setTypeId(lensType.id); setOptionIds([]); }} className="mt-1 accent-ink" />
+                      <span><span className="font-medium">{lensType.name}</span>{lensType.description ? <span className="block text-ink-muted">{lensType.description}</span> : null}</span>
                     </label>
                   ))}
                 </div>

@@ -16,8 +16,8 @@ export async function createTransferAction(_p: R, form: FormData): Promise<R> {
   const res = await runAction(async () => {
     const actor = await requireStaff("transfers.create");
     const data = formToNested(form);
-    const t = await createTransfer(actor, { fromBranchId: String(data.fromBranchId ?? ""), toBranchId: String(data.toBranchId ?? ""), notes: String(data.notes ?? ""), items: await resolveSkuLines(data.lines) });
-    id = t.id;
+    const transfer = await createTransfer(actor, { fromBranchId: String(data.fromBranchId ?? ""), toBranchId: String(data.toBranchId ?? ""), notes: String(data.notes ?? ""), items: await resolveSkuLines(data.lines) });
+    id = transfer.id;
   });
   if (res.ok && id) redirect(`/admin/transfers/${id}`);
   return res;

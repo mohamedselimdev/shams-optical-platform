@@ -29,14 +29,14 @@ export default async function LoyaltyPage() {
         <Table>
           <thead><tr><Th>العميل</Th><Th>النوع</Th><Th>النقاط</Th><Th>الرصيد بعدها</Th><Th>السبب</Th><Th>التاريخ</Th></tr></thead>
           <tbody>
-            {recent.map((t) => (
-              <tr key={t.id}>
-                <Td><Link className="text-sun-700 hover:underline" href={`/admin/customers/${t.account.customer.id}`}>{t.account.customer.firstName} {t.account.customer.lastName ?? ""}</Link></Td>
-                <Td>{LOYALTY_TX_LABELS[t.type]}</Td>
-                <Td className="num" dir="ltr">{t.points > 0 ? `+${t.points}` : t.points}</Td>
-                <Td className="num">{numberFmt.format(t.balanceAfter)}</Td>
-                <Td className="text-xs">{t.reason ?? "—"}</Td>
-                <Td><DateText value={t.createdAt} withTime /></Td>
+            {recent.map((tx) => (
+              <tr key={tx.id}>
+                <Td><Link className="text-sun-700 hover:underline" href={`/admin/customers/${tx.account.customer.id}`}>{tx.account.customer.firstName} {tx.account.customer.lastName ?? ""}</Link></Td>
+                <Td>{LOYALTY_TX_LABELS[tx.type]}</Td>
+                <Td className="num" dir="ltr">{tx.points > 0 ? `+${tx.points}` : tx.points}</Td>
+                <Td className="num">{numberFmt.format(tx.balanceAfter)}</Td>
+                <Td className="text-xs">{tx.reason ?? "—"}</Td>
+                <Td><DateText value={tx.createdAt} withTime /></Td>
               </tr>
             ))}
           </tbody>

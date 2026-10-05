@@ -15,7 +15,7 @@ export const metadata = { title: "العدسات" };
 type Data = Awaited<ReturnType<typeof lensAdminData>>;
 
 function OptionForm({ o, types }: { o?: Data["options"][number]; types: Data["types"] }) {
-  const ruleIds = types.filter((t) => t.optionRules.some((r) => r.optionId === o?.id)).map((t) => t.id);
+  const ruleIds = types.filter((lensType) => lensType.optionRules.some((r) => r.optionId === o?.id)).map((lensType) => lensType.id);
   return (
     <ActionForm action={saveOptionAction} className="grid items-end gap-3 sm:grid-cols-6" resetOnSuccess={!o}>
       {o ? <input type="hidden" name="id" value={o.id} /> : null}
@@ -30,7 +30,7 @@ function OptionForm({ o, types }: { o?: Data["options"][number]; types: Data["ty
       <TextField label="الوصف" name="description" defaultValue={o?.description ?? ""} className="sm:col-span-3" />
       <fieldset className="sm:col-span-3">
         <legend className="text-xs text-ink-muted">متاح مع (فارغ = كل الأنواع)</legend>
-        <div className="mt-1 flex flex-wrap gap-3">{types.map((t) => <CheckboxField key={t.id} name="lensTypeIds[]" value={t.id} label={t.name} defaultChecked={ruleIds.includes(t.id)} />)}</div>
+        <div className="mt-1 flex flex-wrap gap-3">{types.map((lensType) => <CheckboxField key={lensType.id} name="lensTypeIds[]" value={lensType.id} label={lensType.name} defaultChecked={ruleIds.includes(lensType.id)} />)}</div>
       </fieldset>
       <div className="sm:col-span-6"><SubmitButton size="sm" variant="secondary">{o ? "حفظ" : "إضافة خيار"}</SubmitButton></div>
     </ActionForm>
@@ -51,7 +51,7 @@ function Toggle({ kind, id, active }: { kind: "type" | "index"; id: string; acti
 export default async function LensesPage() {
   const actor = await requireStaffPage("lenses.write");
   const data = await lensAdminData(actor);
-  const priceOf = (t: string, i: string) => data.prices.find((p) => p.lensTypeId === t && p.lensIndexId === i && p.isActive)?.price;
+  const priceOf = (typeId: string, i: string) => data.prices.find((p) => p.lensTypeId === typeId && p.lensIndexId === i && p.isActive)?.price;
   return (
     <>
       <PageHeader title="العدسات" description="الأسعار هنا هي المرجع الوحيد عند الدفع؛ الطلبات السابقة تحتفظ بالسعر وقت الشراء." />
@@ -73,12 +73,12 @@ export default async function LensesPage() {
                   </tr>
                 </thead>
                 <tbody>
-                  {data.types.map((t) => (
-                    <tr key={t.id} className="border-t border-line">
-                      <th className="p-2 text-start font-medium">{t.name}{!t.isActive ? <Badge tone="neutral" className="ms-1">متوقف</Badge> : null}{t.requiresPrescription ? null : <span className="block text-xs font-normal text-ink-muted">بدون وصفة</span>}</th>
+                  {data.types.map((lensType) => (
+                    <tr key={lensType.id} className="border-t border-line">
+                      <th className="p-2 text-start font-medium">{lensType.name}{!lensType.isActive ? <Badge tone="neutral" className="ms-1">متوقف</Badge> : null}{lensType.requiresPrescription ? null : <span className="block text-xs font-normal text-ink-muted">بدون وصفة</span>}</th>
                       {data.indexes.map((ix) => {
-                        const p = priceOf(t.id, ix.id);
-                        return <td key={ix.id} className="p-2"><input name={`price.${t.id}.${ix.id}`} defaultValue={p !== undefined ? toEgpString(p) : ""} className="num h-9 w-28 rounded-md border border-line-strong px-2 text-sm" inputMode="decimal" dir="ltr" aria-label={`${t.name} ${ix.name}`} /></td>;
+                        const p = priceOf(lensType.id, ix.id);
+                        return <td key={ix.id} className="p-2"><input name={`price.${lensType.id}.${ix.id}`} defaultValue={p !== undefined ? toEgpString(p) : ""} className="num h-9 w-28 rounded-md border border-line-strong px-2 text-sm" inputMode="decimal" dir="ltr" aria-label={`${lensType.name} ${ix.name}`} /></td>;
                       })}
                     </tr>
                   ))}
@@ -93,7 +93,7 @@ export default async function LensesPage() {
         <Card>
           <CardHeader title="أنواع العدسات" />
           <ul className="divide-y divide-line">
-            {data.types.map((t) => <li key={t.id} className="flex items-center justify-between px-5 py-2 text-sm"><span>{t.name} {t.requiresAdd ? <Badge tone="info">يتطلب ADD</Badge> : null}</span><Toggle kind="type" id={t.id} active={t.isActive} /></li>)}
+            {data.types.map((lensType) => <li key={lensType.id} className="flex items-center justify-between px-5 py-2 text-sm"><span>{lensType.name} {lensType.requiresAdd ? <Badge tone="info">يتطلب ADD</Badge> : null}</span><Toggle kind="type" id={lensType.id} active={lensType.isActive} /></li>)}
           </ul>
         </Card>
         <Card>

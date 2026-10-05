@@ -16,26 +16,26 @@ export const metadata = { title: "تحويل مخزون" };
 export default async function TransferDetail({ params }: { params: Promise<{ id: string }> }) {
   const actor = await requireStaffPage("inventory.read");
   const { id } = await params;
-  const t = await loadOr404(() => getTransfer(actor, id));
-  const canApprove = t.status === "DRAFT" && can(actor, "transfers.approve", t.fromBranchId);
-  const canShip = t.status === "APPROVED" && can(actor, "transfers.ship", t.fromBranchId);
-  const canReceive = t.status === "IN_TRANSIT" && can(actor, "transfers.receive", t.toBranchId);
-  const canCancel = (t.status === "DRAFT" || t.status === "APPROVED") && (can(actor, "transfers.approve", t.fromBranchId) || can(actor, "transfers.create", t.fromBranchId));
+  const transfer = await loadOr404(() => getTransfer(actor, id));
+  const canApprove = transfer.status === "DRAFT" && can(actor, "transfers.approve", transfer.fromBranchId);
+  const canShip = transfer.status === "APPROVED" && can(actor, "transfers.ship", transfer.fromBranchId);
+  const canReceive = transfer.status === "IN_TRANSIT" && can(actor, "transfers.receive", transfer.toBranchId);
+  const canCancel = (transfer.status === "DRAFT" || transfer.status === "APPROVED") && (can(actor, "transfers.approve", transfer.fromBranchId) || can(actor, "transfers.create", transfer.fromBranchId));
   const cell = "h-8 w-20 rounded border border-line-strong px-2 text-sm";
   const lineForm = canShip || canReceive;
   return (
     <>
-      <PageHeader back={{ href: "/admin/transfers", label: "التحويلات" }} title={<span className="num">{t.number}</span>} description={`${t.fromBranch.name} ← ${t.toBranch.name}`} actions={<Badge tone={transferTone[t.status]}>{TRANSFER_STATUS_LABELS[t.status]}</Badge>} />
+      <PageHeader back={{ href: "/admin/transfers", label: "التحويلات" }} title={<span className="num">{transfer.number}</span>} description={`${transfer.fromBranch.name} ← ${transfer.toBranch.name}`} actions={<Badge tone={transferTone[transfer.status]}>{TRANSFER_STATUS_LABELS[transfer.status]}</Badge>} />
       <div className="grid gap-6 xl:grid-cols-3">
         <Card className="xl:col-span-2">
           <CardHeader title="البنود" />
           <ActionForm action={transferStepAction}>
-            <input type="hidden" name="id" value={t.id} />
+            <input type="hidden" name="id" value={transfer.id} />
             <input type="hidden" name="step" value={canShip ? "ship" : "receive"} />
             <Table>
               <thead><tr><Th>المنتج</Th><Th>المطلوب</Th><Th>المشحون</Th><Th>المستلم</Th>{canReceive ? <Th>سبب الفرق</Th> : null}</tr></thead>
               <tbody>
-                {t.items.map((it, i) => (
+                {transfer.items.map((it, i) => (
                   <tr key={it.id}>
                     <Td><p>{it.variant.product.name}</p><p className="num text-xs text-ink-muted">{it.variant.sku}</p><input type="hidden" name={`items.${i}.itemId`} value={it.id} /></Td>
                     <Td className="num">{numberFmt.format(it.quantityRequested)}</Td>
@@ -61,7 +61,7 @@ export default async function TransferDetail({ params }: { params: Promise<{ id:
               <CardBody className="space-y-3">
                 {canApprove ? (
                   <ActionForm action={transferStepAction}>
-                    <input type="hidden" name="id" value={t.id} />
+                    <input type="hidden" name="id" value={transfer.id} />
                     <input type="hidden" name="step" value="approve" />
                     <SubmitButton className="w-full">اعتماد التحويل</SubmitButton>
                   </ActionForm>
@@ -70,7 +70,7 @@ export default async function TransferDetail({ params }: { params: Promise<{ id:
                   <details className="rounded-md border border-danger/30 p-3">
                     <summary className="cursor-pointer text-sm text-danger">إلغاء التحويل</summary>
                     <ActionForm action={transferStepAction} className="mt-3 space-y-3">
-                      <input type="hidden" name="id" value={t.id} />
+                      <input type="hidden" name="id" value={transfer.id} />
                       <input type="hidden" name="step" value="cancel" />
                       <TextArea label="السبب" name="reason" rows={2} required />
                       <SubmitButton variant="danger" size="sm">تأكيد الإلغاء</SubmitButton>
@@ -84,7 +84,7 @@ export default async function TransferDetail({ params }: { params: Promise<{ id:
             <CardHeader title="السجل" />
             <CardBody>
               <ol className="space-y-3 text-sm">
-                {t.events.map((e) => (
+                {transfer.events.map((e) => (
                   <li key={e.id}>
                     <Badge tone={transferTone[e.toStatus]}>{TRANSFER_STATUS_LABELS[e.toStatus]}</Badge> <DateText value={e.createdAt} withTime />
                     {e.note ? <p className="mt-1 text-ink-muted">{e.note}</p> : null}
