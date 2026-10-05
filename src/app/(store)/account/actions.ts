@@ -14,16 +14,18 @@ import { deleteMyAddress, saveMyAddress, toggleWishlist, updateMyProfile } from 
 import { archiveMyPrescription, createPrescription } from "@/modules/prescriptions/service";
 import { prescriptionValuesSchema } from "@/modules/prescriptions/schema";
 import { createReturn } from "@/modules/returns/service";
+import { getT } from "@/i18n/server";
 
 type R = ActionResult<unknown> | null;
 const id = z.string().min(1).max(64);
 
 export async function saveAddressAction(_p: R, form: FormData): Promise<R> {
+  const t = await getT();
   const res = await runAction(async () => {
     const actor = await requireCustomer();
     const d = formToObject(form);
     await saveMyAddress(actor, d.id ? id.parse(d.id) : null, d, d.isDefault === "on");
-  }, "تم حفظ العنوان");
+  }, t("تم حفظ العنوان"));
   if (res.ok) revalidatePath("/account/addresses");
   return res;
 }
@@ -35,6 +37,7 @@ export async function deleteAddressAction(_p: R, form: FormData): Promise<R> {
 }
 
 export async function newPrescriptionAction(_p: R, form: FormData): Promise<R> {
+  const t = await getT();
   let ok = false;
   const res = await runAction(async () => {
     const actor = await requireCustomer();
@@ -49,7 +52,7 @@ export async function newPrescriptionAction(_p: R, form: FormData): Promise<R> {
       if (!parsed.success) throw new z.ZodError(parsed.error.issues.map((i) => ({ ...i, path: ["rx", ...i.path] })));
       values = parsed.data;
     }
-    if (!values && !hasFile) throw invalid("أدخل قيم الوصفة أو ارفع صورة لها");
+    if (!values && !hasFile) throw invalid(t("أدخل قيم الوصفة أو ارفع صورة لها"));
     await createPrescription(actor, { meta: { label: d.label, doctorName: d.doctorName, examDate: d.examDate }, values, file: hasFile ? file : null });
     ok = true;
   });
@@ -83,23 +86,25 @@ export async function removeWishlistAction(_p: R, form: FormData): Promise<R> {
 }
 
 export async function profileAction(_p: R, form: FormData): Promise<R> {
-  const res = await runAction(async () => updateMyProfile(await requireCustomer(), formToObject(form)), "تم حفظ البيانات");
+  const t = await getT();
+  const res = await runAction(async () => updateMyProfile(await requireCustomer(), formToObject(form)), t("تم حفظ البيانات"));
   if (res.ok) revalidatePath("/account", "layout");
   return res;
 }
 
 export async function changePasswordAction(_p: R, form: FormData): Promise<R> {
+  const t = await getT();
   return runAction(async () => {
     await requireCustomer();
     const d = z
-      .object({ current: z.string().min(1, "أدخل كلمة المرور الحالية"), password: z.string().min(10, "10 أحرف على الأقل").max(128), confirm: z.string() })
-      .refine((v) => v.password === v.confirm, { path: ["confirm"], message: "كلمتا المرور غير متطابقتين" })
+      .object({ current: z.string().min(1, t("أدخل كلمة المرور الحالية")), password: z.string().min(10, t("10 أحرف على الأقل")).max(128), confirm: z.string() })
+      .refine((v) => v.password === v.confirm, { path: ["confirm"], message: t("كلمتا المرور غير متطابقتين") })
       .parse(formToObject(form));
     try {
       await auth.api.changePassword({ body: { currentPassword: d.current, newPassword: d.password, revokeOtherSessions: true }, headers: await headers() });
     } catch (err) {
-      if (err instanceof APIError) throw invalid("كلمة المرور الحالية غير صحيحة");
+      if (err instanceof APIError) throw invalid(t("كلمة المرور الحالية غير صحيحة"));
       throw err;
     }
-  }, "تم تغيير كلمة المرور وتسجيل الخروج من الأجهزة الأخرى");
+  }, t("تم تغيير كلمة المرور وتسجيل الخروج من الأجهزة الأخرى"));
 }

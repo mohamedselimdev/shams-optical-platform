@@ -25,7 +25,7 @@ _Last updated: 2026-10-04_
 
 | Area | Status | Notes |
 |---|---|---|
-| Storefront (home, categories, brands, collections, search & filters, product page, compare, recently viewed, CMS pages, store locator, SEO, sitemap, JSON-LD) | COMPLETE | Arabic RTL; branch availability shown as levels only |
+| Storefront (home, categories, brands, collections, search & filters, product page, compare, recently viewed, CMS pages, store locator, SEO, sitemap, JSON-LD) | COMPLETE | Arabic RTL and English LTR; branch availability shown as levels only |
 | Lens configurator | COMPLETE | Type × index price matrix, options, compatibility and power limits; server-authoritative |
 | Prescriptions (saved, entered, uploaded) | COMPLETE | Private; staff views audited; verification gate before lens preparation. Prescription lenses require a customer account by design |
 | Cart (guest + signed-in, merge on login, coupons) | COMPLETE | |
@@ -84,7 +84,12 @@ _Last updated: 2026-10-04_
 | Area | Status | Notes |
 |---|---|---|
 | Arabic, RTL, EGP | COMPLETE | |
-| English locale | PLANNED | Labels centralised in `src/i18n`; catalog has `nameEn` fields |
+| English interface (storefront and dashboard) | COMPLETE | Every interface string has an English translation in `src/i18n/messages/en.json`; a unit test fails when one is missing. Switch in the header; choice kept in the `shams_locale` cookie |
+| English content | COMPLETE | Optional English fields for products (name, description, material, variant colour), categories, brands, collections, lenses, branches (name, city, address), CMS pages, banners, announcements, navigation and home sections. Empty fields fall back to Arabic. Order lines keep the English product and variant names from purchase time |
+| English emails and notifications | COMPLETE | Order emails use the language the order was placed in (`Order.locale`); password reset and verification emails use the requester's language |
+| English URLs and SEO | PLANNED | Language is cookie based, so search engines index the Arabic pages only; no `/en` routes or `hreflang` yet |
+| Dashboard data in English | PARTIAL | Labels, statuses and report headings are translated; names staff entered (products, branches, customers, roles they created) are shown as stored |
+| Dark and light mode | COMPLETE | System, light or dark from the header switch (`shams_theme` cookie); applied on the server to avoid a flash; all colours come from theme tokens in `globals.css` |
 
 ## Verified acceptance criteria
 

@@ -1,4 +1,4 @@
-/** Egyptian governorates (Arabic display names). Used for addresses and shipping zones. */
+/** Egyptian governorates. The Arabic name is the stored value and the translation key (display with t(g)). */
 export const GOVERNORATES = [
   "القاهرة", "الجيزة", "الإسكندرية", "القليوبية", "الشرقية", "الدقهلية", "الغربية", "المنوفية", "البحيرة",
   "كفر الشيخ", "دمياط", "بورسعيد", "الإسماعيلية", "السويس", "الفيوم", "بني سويف", "المنيا", "أسيوط",

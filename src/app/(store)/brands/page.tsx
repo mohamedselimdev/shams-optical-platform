@@ -1,13 +1,19 @@
 import Link from "next/link";
 import { storefrontTaxonomy } from "@/modules/catalog/queries";
+import { getT } from "@/i18n/server";
+import type { Metadata } from "next";
 
-export const metadata = { title: "الماركات" };
+export async function generateMetadata(): Promise<Metadata> {
+  const t = await getT();
+  return { title: t("الماركات") };
+}
 
 export default async function Brands() {
+  const t = await getT();
   const { brands } = await storefrontTaxonomy();
   return (
     <div className="container-page py-10">
-      <h1 className="mb-8 font-display text-3xl font-semibold">الماركات</h1>
+      <h1 className="mb-8 font-display text-3xl font-semibold">{t("الماركات")}</h1>
       <ul className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
         {brands.map((b) => (
           <li key={b.slug}>

@@ -4,6 +4,8 @@ import { db } from "@/server/db";
 import { audit } from "@/server/audit";
 import { type Actor, assertCan } from "@/server/rbac/actor";
 import { conflict, notFound } from "@/server/errors";
+import { getLocaleOrDefault } from "@/i18n/server";
+import { localizeContent } from "@/i18n/localize";
 import { zCheckbox, zOptionalText, zSlug, zText } from "@/lib/validation";
 
 export const branchSchema = z.object({
@@ -14,7 +16,9 @@ export const branchSchema = z.object({
   type: z.enum(["STORE", "WAREHOUSE"]),
   governorate: zText(60),
   city: zText(60),
+  cityEn: zOptionalText(60),
   addressLine: zText(300),
+  addressLineEn: zOptionalText(300),
   phone: zOptionalText(30),
   email: zOptionalText(120),
   latitude: z.union([z.literal(""), z.coerce.number().min(-90).max(90)]).optional().transform((v) => (v === "" || v === undefined ? null : v)),
@@ -55,9 +59,10 @@ export async function listBranchesFor(actor: Actor) {
 
 /** Public storefront list: active stores only, no internal fields. */
 export async function listPublicBranches() {
-  return db.branch.findMany({
+  const rows = await db.branch.findMany({
     where: { isActive: true, type: "STORE" },
-    select: { id: true, slug: true, name: true, governorate: true, city: true, addressLine: true, phone: true, latitude: true, longitude: true, openingHours: true, pickupEnabled: true },
+    select: { id: true, slug: true, name: true, nameEn: true, governorate: true, city: true, cityEn: true, addressLine: true, addressLineEn: true, phone: true, latitude: true, longitude: true, openingHours: true, pickupEnabled: true },
     orderBy: [{ sortOrder: "asc" }, { name: "asc" }],
   });
+  return localizeContent(rows, await getLocaleOrDefault());
 }

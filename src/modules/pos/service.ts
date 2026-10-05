@@ -14,6 +14,8 @@ import { buildOrderData, couponMessage } from "../checkout/service";
 import { reserveStock } from "../inventory/ledger";
 import { redeemPromotions } from "../promotions/service";
 import { OFFLINE_PROVIDER } from "../payments/registry";
+import { getLocaleOrDefault } from "@/i18n/server";
+import { localizeContent } from "@/i18n/localize";
 import { ORDER_REF, applyTransition, lockOrder } from "../orders/service";
 
 /**
@@ -183,10 +185,10 @@ export async function posTodaySummary(actor: StaffActor, branchId: string, since
 export async function getPosReceipt(actor: StaffActor, orderId: string) {
   const order = await db.order.findFirst({
     where: { id: orderId, channel: "POS" },
-    include: { items: true, payments: { where: { status: "SUCCEEDED" } }, fulfillmentBranch: { select: { name: true, phone: true } } },
+    include: { items: true, payments: { where: { status: "SUCCEEDED" } }, fulfillmentBranch: { select: { name: true, nameEn: true, phone: true } } },
   });
   if (!order) return null;
   assertCan(actor, "pos.use", order.fulfillmentBranchId);
   const cash = order.payments.find((p) => p.method === "CASH")?.providerData as { tendered?: number; change?: number } | null | undefined;
-  return { ...order, tendered: cash?.tendered ?? null, change: cash?.change ?? null };
+  return localizeContent({ ...order, tendered: cash?.tendered ?? null, change: cash?.change ?? null }, await getLocaleOrDefault());
 }

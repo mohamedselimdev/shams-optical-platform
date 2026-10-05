@@ -186,7 +186,9 @@ model Branch {
   type          BranchType @default(STORE)
   governorate   String
   city          String
+  cityEn        String?
   addressLine   String
+  addressLineEn String?
   phone         String?
   email         String?
   latitude      Float?
@@ -336,51 +338,54 @@ enum Gender {
 }
 
 model Brand {
-  id          String    @id @default(cuid())
-  slug        String    @unique
-  name        String
-  nameEn      String?
-  description String?
-  logoUrl     String?
-  isActive    Boolean   @default(true)
-  sortOrder   Int       @default(0)
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
-  products    Product[]
+  id            String    @id @default(cuid())
+  slug          String    @unique
+  name          String
+  nameEn        String?
+  description   String?
+  descriptionEn String?
+  logoUrl       String?
+  isActive      Boolean   @default(true)
+  sortOrder     Int       @default(0)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  products      Product[]
 
   @@map("brand")
 }
 
 model Category {
-  id          String     @id @default(cuid())
-  slug        String     @unique
-  name        String
-  nameEn      String?
-  description String?
-  parentId    String?
-  parent      Category?  @relation("CategoryTree", fields: [parentId], references: [id], onDelete: Restrict)
-  children    Category[] @relation("CategoryTree")
-  isActive    Boolean    @default(true)
-  sortOrder   Int        @default(0)
-  createdAt   DateTime   @default(now())
-  updatedAt   DateTime   @updatedAt
-  products    Product[]
+  id            String     @id @default(cuid())
+  slug          String     @unique
+  name          String
+  nameEn        String?
+  description   String?
+  descriptionEn String?
+  parentId      String?
+  parent        Category?  @relation("CategoryTree", fields: [parentId], references: [id], onDelete: Restrict)
+  children      Category[] @relation("CategoryTree")
+  isActive      Boolean    @default(true)
+  sortOrder     Int        @default(0)
+  createdAt     DateTime   @default(now())
+  updatedAt     DateTime   @updatedAt
+  products      Product[]
 
   @@index([parentId])
   @@map("category")
 }
 
 model Collection {
-  id          String              @id @default(cuid())
-  slug        String              @unique
-  name        String
-  nameEn      String?
-  description String?
-  isActive    Boolean             @default(true)
-  sortOrder   Int                 @default(0)
-  createdAt   DateTime            @default(now())
-  updatedAt   DateTime            @updatedAt
-  products    CollectionProduct[]
+  id            String              @id @default(cuid())
+  slug          String              @unique
+  name          String
+  nameEn        String?
+  description   String?
+  descriptionEn String?
+  isActive      Boolean             @default(true)
+  sortOrder     Int                 @default(0)
+  createdAt     DateTime            @default(now())
+  updatedAt     DateTime            @updatedAt
+  products      CollectionProduct[]
 
   @@map("collection")
 }
@@ -402,6 +407,7 @@ model Product {
   name                   String
   nameEn                 String?
   description            String?
+  descriptionEn          String?
   type                   ProductType
   status                 ProductStatus @default(DRAFT)
   brandId                String?
@@ -413,6 +419,7 @@ model Product {
   gender                 Gender?
   frameShape             String?
   frameMaterial          String?
+  frameMaterialEn        String?
   rimType                String?
   polarized              Boolean       @default(false)
   uvProtection           Boolean       @default(false)
@@ -451,6 +458,7 @@ model ProductVariant {
   sku          String   @unique
   barcode      String?  @unique
   colorName    String?
+  colorNameEn  String?
   colorHex     String?
   sizeLabel    String?
   lensWidthMm  Int?
@@ -520,6 +528,7 @@ model LensType {
   name                 String
   nameEn               String?
   description          String?
+  descriptionEn        String?
   requiresPrescription Boolean            @default(true)
   requiresAdd          Boolean            @default(false)
   isActive             Boolean            @default(true)
@@ -531,19 +540,21 @@ model LensType {
 }
 
 model LensIndex {
-  id          String             @id @default(cuid())
-  key         String             @unique
+  id            String             @id @default(cuid())
+  key           String             @unique
   /// Refractive index × 100 (1.67 => 167).
-  value       Int
-  name        String
-  description String?
+  value         Int
+  name          String
+  nameEn        String?
+  description   String?
+  descriptionEn String?
   /// Supported spherical power range in hundredths of a diopter.
-  minSph      Int                @default(-1000)
-  maxSph      Int                @default(800)
-  maxCyl      Int                @default(400)
-  isActive    Boolean            @default(true)
-  sortOrder   Int                @default(0)
-  prices      LensPackagePrice[]
+  minSph        Int                @default(-1000)
+  maxSph        Int                @default(800)
+  maxCyl        Int                @default(400)
+  isActive      Boolean            @default(true)
+  sortOrder     Int                @default(0)
+  prices        LensPackagePrice[]
 
   @@map("lens_index")
 }
@@ -570,18 +581,19 @@ enum LensOptionGroup {
 }
 
 model LensOption {
-  id          String           @id @default(cuid())
-  key         String           @unique
-  name        String
-  nameEn      String?
-  description String?
-  group       LensOptionGroup
-  price       Int
+  id            String           @id @default(cuid())
+  key           String           @unique
+  name          String
+  nameEn        String?
+  description   String?
+  descriptionEn String?
+  group         LensOptionGroup
+  price         Int
   /// When true only one option from the same group may be selected.
-  exclusive   Boolean          @default(true)
-  isActive    Boolean          @default(true)
-  sortOrder   Int              @default(0)
-  rules       LensOptionRule[]
+  exclusive     Boolean          @default(true)
+  isActive      Boolean          @default(true)
+  sortOrder     Int              @default(0)
+  rules         LensOptionRule[]
 
   @@map("lens_option")
 }
@@ -1002,6 +1014,8 @@ model Order {
   customerId            String?
   customer              Customer?       @relation(fields: [customerId], references: [id], onDelete: Restrict)
   channel               SalesChannel    @default(WEB)
+  /// Interface language at purchase time; customer messages about the order use it.
+  locale                String          @default("ar") @db.VarChar(5)
   status                OrderStatus     @default(PENDING_PAYMENT)
   paymentStatus         PaymentStatus   @default(UNPAID)
   paymentMethod         PaymentMethod
@@ -1065,6 +1079,9 @@ model OrderItem {
   productId            String
   sku                  String
   productName          String
+  /// English product name at purchase time (when the catalog had one).
+  productNameEn        String?
+  variantNameEn        String?
   variantName          String?
   brandName            String?
   categoryId           String?
@@ -1516,8 +1533,11 @@ model ContentPage {
   id             String        @id @default(cuid())
   slug           String        @unique
   title          String
+  titleEn        String?
   /// Structured blocks validated by the CMS block schema (no raw HTML).
   blocks         Json
+  /// English version of the page; the Arabic blocks are shown when empty.
+  blocksEn       Json?
   status         ContentStatus @default(DRAFT)
   seoTitle       String?
   seoDescription String?
@@ -1530,21 +1550,24 @@ model ContentPage {
 }
 
 model Banner {
-  id        String      @id @default(cuid())
-  placement String
-  title     String
-  subtitle  String?
-  ctaLabel  String?
-  ctaHref   String?
-  imageUrl  String?
-  mediaId   String?
-  media     MediaAsset? @relation(fields: [mediaId], references: [id], onDelete: SetNull)
-  startsAt  DateTime?
-  endsAt    DateTime?
-  isActive  Boolean     @default(true)
-  sortOrder Int         @default(0)
-  createdAt DateTime    @default(now())
-  updatedAt DateTime    @updatedAt
+  id         String      @id @default(cuid())
+  placement  String
+  title      String
+  titleEn    String?
+  subtitle   String?
+  subtitleEn String?
+  ctaLabel   String?
+  ctaLabelEn String?
+  ctaHref    String?
+  imageUrl   String?
+  mediaId    String?
+  media      MediaAsset? @relation(fields: [mediaId], references: [id], onDelete: SetNull)
+  startsAt   DateTime?
+  endsAt     DateTime?
+  isActive   Boolean     @default(true)
+  sortOrder  Int         @default(0)
+  createdAt  DateTime    @default(now())
+  updatedAt  DateTime    @updatedAt
 
   @@index([placement, isActive, sortOrder])
   @@map("banner")
@@ -1554,6 +1577,7 @@ model NavigationItem {
   id        String           @id @default(cuid())
   menu      String
   label     String
+  labelEn   String?
   href      String
   parentId  String?
   parent    NavigationItem?  @relation("NavTree", fields: [parentId], references: [id], onDelete: Cascade)
@@ -1568,6 +1592,7 @@ model NavigationItem {
 model Announcement {
   id        String    @id @default(cuid())
   message   String
+  messageEn String?
   href      String?
   startsAt  DateTime?
   endsAt    DateTime?
@@ -1582,6 +1607,7 @@ model HomeSection {
   id        String   @id @default(cuid())
   type      String
   title     String
+  titleEn   String?
   config    Json
   isActive  Boolean  @default(true)
   sortOrder Int      @default(0)

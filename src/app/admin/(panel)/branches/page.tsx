@@ -5,16 +5,22 @@ import { PageHeader } from "@/components/admin/page-header";
 import { BranchForm } from "@/components/admin/branch-form";
 import { Badge, Card, CardBody, CardHeader } from "@/ui/primitives";
 import { saveBranchAction } from "./actions";
+import { getT } from "@/i18n/server";
+import type { Metadata } from "next";
 
-export const metadata = { title: "الفروع" };
+export async function generateMetadata(): Promise<Metadata> {
+  const t = await getT();
+  return { title: t("الفروع") };
+}
 
 export default async function BranchesPage() {
+  const t = await getT();
   const actor = await requireStaffPage("branches.read");
   const branches = await listBranchesFor(actor);
   const canWrite = can(actor, "branches.write");
   return (
     <>
-      <PageHeader title="الفروع والمخازن" description="الفرع يحدد المخزون والاستلام وصلاحيات الموظفين." />
+      <PageHeader title={t("الفروع والمخازن")} description={t("الفرع يحدد المخزون والاستلام وصلاحيات الموظفين.")} />
       <div className="space-y-3">
         {branches.map((b) => (
           <Card key={b.id}>
@@ -22,11 +28,11 @@ export default async function BranchesPage() {
               <summary className="flex cursor-pointer flex-wrap items-center gap-3 px-5 py-4">
                 <span className="font-medium">{b.name}</span>
                 <span className="num text-xs text-ink-muted">{b.code}</span>
-                <Badge tone={b.type === "WAREHOUSE" ? "info" : "sun"}>{b.type === "WAREHOUSE" ? "مخزن" : "فرع بيع"}</Badge>
-                {!b.isActive ? <Badge tone="neutral">غير نشط</Badge> : null}
-                {b.pickupEnabled ? <Badge tone="success">استلام</Badge> : null}
-                {b.shipsOnline ? <Badge tone="success">شحن أونلاين</Badge> : null}
-                <span className="ms-auto text-sm text-ink-muted">{b.city}، {b.governorate}</span>
+                <Badge tone={b.type === "WAREHOUSE" ? "info" : "sun"}>{b.type === "WAREHOUSE" ? t("مخزن") : t("فرع بيع")}</Badge>
+                {!b.isActive ? <Badge tone="neutral">{t("غير نشط")}</Badge> : null}
+                {b.pickupEnabled ? <Badge tone="success">{t("استلام")}</Badge> : null}
+                {b.shipsOnline ? <Badge tone="success">{t("شحن أونلاين")}</Badge> : null}
+                <span className="ms-auto text-sm text-ink-muted">{t("{0}، {1}", [b.city, t(b.governorate)])}</span>
               </summary>
               <CardBody className="border-t border-line">
                 {canWrite ? <BranchForm action={saveBranchAction} branch={b} /> : <p className="text-sm">{b.addressLine} · <span dir="ltr">{b.phone}</span></p>}
@@ -37,7 +43,7 @@ export default async function BranchesPage() {
       </div>
       {canWrite ? (
         <Card className="mt-6">
-          <CardHeader title="إضافة فرع أو مخزن" />
+          <CardHeader title={t("إضافة فرع أو مخزن")} />
           <CardBody><BranchForm action={saveBranchAction} /></CardBody>
         </Card>
       ) : null}

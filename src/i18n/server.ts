@@ -23,6 +23,15 @@ export const getT = cache(async (): Promise<Translator> => {
   return createTranslator(locale, catalogs[locale]);
 });
 
+/** The request's translator, or Arabic when there is no request (scripts, jobs, tests). */
+export async function getTOrDefault(): Promise<Translator> {
+  try {
+    return await getT();
+  } catch {
+    return createTranslator(DEFAULT_LOCALE, catalogs[DEFAULT_LOCALE]);
+  }
+}
+
 /** Translator for a known locale outside a request (emails, exports, jobs). */
 export function translatorFor(locale: Locale): Translator {
   return createTranslator(locale, catalogs[locale]);
@@ -30,4 +39,13 @@ export function translatorFor(locale: Locale): Translator {
 
 export function messagesFor(locale: Locale): Messages {
   return catalogs[locale];
+}
+
+/** The request's locale, or Arabic when there is no request (scripts, jobs, tests). */
+export async function getLocaleOrDefault(): Promise<Locale> {
+  try {
+    return await getLocale();
+  } catch {
+    return DEFAULT_LOCALE;
+  }
 }

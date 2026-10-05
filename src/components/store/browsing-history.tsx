@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import type { ProductCard as Card } from "@/modules/catalog/queries";
 import { ProductGrid } from "./product-card";
 import { track } from "./analytics";
+import { useT } from "@/i18n/client";
 
 /**
  * Recently viewed and compare lists live in this browser only (localStorage): they hold public
@@ -39,6 +40,7 @@ export function RememberProduct({ id }: { id: string }) {
 }
 
 export function RecentlyViewed({ exclude }: { exclude?: string }) {
+  const t = useT();
   const [items, setItems] = useState<Card[]>([]);
   useEffect(() => {
     const ids = read(RECENT).filter((x) => x !== exclude).slice(0, 4);
@@ -51,7 +53,7 @@ export function RecentlyViewed({ exclude }: { exclude?: string }) {
   if (!items.length) return null;
   return (
     <section className="mt-16" aria-labelledby="recent-title">
-      <h2 id="recent-title" className="mb-6 font-display text-2xl font-semibold">شاهدتها مؤخراً</h2>
+      <h2 id="recent-title" className="mb-6 font-display text-2xl font-semibold">{t("شاهدتها مؤخراً")}</h2>
       <ProductGrid products={items} />
     </section>
   );
@@ -76,6 +78,7 @@ const compareSnapshot = () => {
 };
 
 export function CompareButton({ id }: { id: string }) {
+  const t = useT();
   const raw = useSyncExternalStore(subscribeCompare, compareSnapshot, () => null);
   if (raw === null) return null;
   const list = read(COMPARE);
@@ -89,18 +92,19 @@ export function CompareButton({ id }: { id: string }) {
   return (
     <span className="inline-flex items-center gap-2">
       <button type="button" onClick={toggle} aria-pressed={inList} className="inline-flex h-8 items-center rounded-md border border-line-strong px-3 text-sm hover:border-ink">
-        {inList ? "✓ في المقارنة" : "أضف للمقارنة"}
+        {inList ? t("✓ في المقارنة") : t("أضف للمقارنة")}
       </button>
-      {list.length > 1 ? <Link href={`/compare?ids=${list.join(",")}`} className="text-sm text-sun-700 underline">قارن ({list.length})</Link> : null}
+      {list.length > 1 ? <Link href={`/compare?ids=${list.join(",")}`} className="text-sm text-sun-700 underline">{t("قارن ({0})", [list.length])}</Link> : null}
     </span>
   );
 }
 
 export function ClearCompare() {
+  const t = useT();
   const router = useRouter();
   return (
     <button type="button" onClick={() => { write(COMPARE, []); router.push("/shop"); }} className="text-sm text-ink-muted underline">
-      مسح المقارنة
+      {t("مسح المقارنة")}
     </button>
   );
 }

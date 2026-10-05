@@ -15,10 +15,12 @@ import { createPrescription } from "@/modules/prescriptions/service";
 import { prescriptionValuesSchema } from "@/modules/prescriptions/schema";
 import { submitReview } from "@/modules/reviews/service";
 import { toggleWishlist } from "@/modules/customers/service";
+import { getT } from "@/i18n/server";
+import type { Translator } from "@/i18n/translate";
 
 type R = ActionResult<unknown> | null;
 
-const defaultRxLabel = () => `وصفة ${new Intl.DateTimeFormat("ar-EG", { dateStyle: "medium", timeZone: "Africa/Cairo" }).format(new Date())}`;
+const defaultRxLabel = (t: Translator) => t("وصفة {0}", [t.date(new Date())]);
 
 /**
  * Add a frame (optionally with lenses) to the cart. When the lens type needs a prescription, the
@@ -26,6 +28,7 @@ const defaultRxLabel = () => `وصفة ${new Intl.DateTimeFormat("ar-EG", { date
  * so a rejected configuration never leaves a stray prescription behind.
  */
 export async function addToCartAction(_p: R, form: FormData): Promise<R> {
+  const t = await getT();
   let ok = false;
   const res = await runAction(async () => {
     const d = formToNested(form) as Record<string, unknown> & { rx?: Record<string, unknown>; lensOptionIds?: string[] };
@@ -38,15 +41,15 @@ export async function addToCartAction(_p: R, form: FormData): Promise<R> {
     let prescriptionId: string | null = null;
 
     if (withLens) {
-      if (!lensTypeId || !lensIndexId) throw invalid("اختر نوع العدسة وسُمكها");
+      if (!lensTypeId || !lensIndexId) throw invalid(t("اختر نوع العدسة وسُمكها"));
       const type = await db.lensType.findUnique({ where: { id: lensTypeId }, select: { requiresPrescription: true } });
-      if (!type) throw invalid("نوع العدسة غير متاح");
+      if (!type) throw invalid(t("نوع العدسة غير متاح"));
       if (type.requiresPrescription) {
         if (!actor) throw unauthenticated();
         const source = z.enum(["SAVED", "ENTERED", "UPLOADED"]).parse(d.rxSource);
-        const label = String(d.rxLabel ?? "").trim() || defaultRxLabel();
+        const label = String(d.rxLabel ?? "").trim() || defaultRxLabel(t);
         if (source === "SAVED") {
-          prescriptionId = z.string().min(1, "اختر الوصفة").parse(d.prescriptionId);
+          prescriptionId = z.string().min(1, t("اختر الوصفة")).parse(d.prescriptionId);
         } else if (source === "ENTERED") {
           const parsed = prescriptionValuesSchema.safeParse(d.rx ?? {});
           // Re-key issues to the form's "rx." field names so errors render under the right cells.
@@ -57,7 +60,7 @@ export async function addToCartAction(_p: R, form: FormData): Promise<R> {
           prescriptionId = (await createPrescription(actor, { meta: { label }, values })).id;
         } else {
           const file = form.get("rxFile");
-          if (!(file instanceof File) || file.size === 0) throw invalid("ارفع صورة الوصفة");
+          if (!(file instanceof File) || file.size === 0) throw invalid(t("ارفع صورة الوصفة"));
           await priceLensSelection(db, { lensTypeId, lensIndexId, optionIds: lensOptionIds }, null);
           await enforceRateLimit(`rx:create:${actor.customerId}`, 20, 3600);
           prescriptionId = (await createPrescription(actor, { meta: { label }, file })).id;
@@ -94,9 +97,10 @@ export async function toggleWishlistAction(_p: R, form: FormData): Promise<R> {
 }
 
 export async function reviewAction(_p: R, form: FormData): Promise<R> {
+  const t = await getT();
   return runAction(async () => {
     const actor = await requireCustomer();
     await enforceRateLimit(`review:${actor.customerId}`, 10, 3600);
     await submitReview(actor, Object.fromEntries(form));
-  }, "شكراً لك! سيظهر تقييمك بعد المراجعة.");
+  }, t("شكراً لك! سيظهر تقييمك بعد المراجعة."));
 }

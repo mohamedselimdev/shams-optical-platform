@@ -7,6 +7,7 @@ import { formToNested, runAction, type ActionResult } from "@/server/action";
 import { requireStaff } from "@/server/auth/session";
 import { approveTransfer, cancelTransfer, createTransfer, receiveTransfer, shipTransfer } from "@/modules/transfers/service";
 import { resolveSkuLines } from "@/components/admin/resolve-skus";
+import { getT } from "@/i18n/server";
 
 type R = ActionResult<unknown> | null;
 const zId = z.string().min(1).max(64);
@@ -24,6 +25,7 @@ export async function createTransferAction(_p: R, form: FormData): Promise<R> {
 }
 
 export async function transferStepAction(_p: R, form: FormData): Promise<R> {
+  const t = await getT();
   return runAction(async () => {
     const actor = await requireStaff("inventory.read");
     const data = formToNested(form) as { id?: string; step?: string; note?: string; reason?: string; items?: { itemId: string; quantityShipped?: string; quantityReceived?: string; discrepancyReason?: string }[] };
@@ -34,5 +36,5 @@ export async function transferStepAction(_p: R, form: FormData): Promise<R> {
     else if (data.step === "cancel") await cancelTransfer(actor, id, String(data.reason ?? ""));
     else throw new Error("unknown step");
     revalidatePath(`/admin/transfers/${id}`);
-  }, "تم تحديث التحويل");
+  }, t("تم تحديث التحويل"));
 }

@@ -2,6 +2,8 @@ import "server-only";
 import { z } from "zod";
 import { isDomainError } from "./errors";
 import { logger } from "./logger";
+import { getTOrDefault } from "@/i18n/server";
+import type { Translator } from "@/i18n/translate";
 
 export type ActionResult<T = undefined> =
   | { ok: true; data: T; message?: string }
@@ -28,11 +30,28 @@ export function formToObject(form: FormData): Record<string, unknown> {
   return out;
 }
 
-function fieldErrors(error: z.ZodError): Record<string, string> {
+/** Zod's built-in messages are English; schema-specific messages are written in Arabic (the source language). */
+function issueMessage(issue: z.core.$ZodIssue): string {
+  if (/[\u0600-\u06FF]/.test(issue.message)) return issue.message;
+  switch (issue.code) {
+    case "too_small":
+      return issue.origin === "string" && issue.minimum === 1 ? "هذا الحقل مطلوب" : "القيمة أقل من الحد المسموح";
+    case "too_big":
+      return "القيمة أكبر من الحد المسموح";
+    case "invalid_type":
+      return "هذا الحقل مطلوب";
+    case "invalid_format":
+      return "الصيغة غير صحيحة";
+    default:
+      return "قيمة غير صالحة";
+  }
+}
+
+function fieldErrors(error: z.ZodError, t: Translator): Record<string, string> {
   const out: Record<string, string> = {};
   for (const issue of error.issues) {
     const key = issue.path.join(".");
-    if (!out[key]) out[key] = issue.message;
+    if (!out[key]) out[key] = t.message(issueMessage(issue));
   }
   return out;
 }
@@ -42,22 +61,23 @@ function fieldErrors(error: z.ZodError): Record<string, string> {
  * anything else is logged with an incident id and reported generically (no stack traces leak).
  */
 export async function runAction<T>(fn: () => Promise<T>, successMessage?: string): Promise<ActionResult<T>> {
+  const t = await getTOrDefault();
   try {
     const data = await fn();
-    return { ok: true, data, message: successMessage };
+    return { ok: true, data, message: successMessage ? t.message(successMessage) : undefined };
   } catch (error) {
     if (error && typeof error === "object" && "digest" in error && String((error as { digest: unknown }).digest).startsWith("NEXT_")) {
       throw error; // redirect()/notFound() control flow
     }
     if (error instanceof z.ZodError) {
-      return { ok: false, code: "VALIDATION", error: "يرجى مراجعة البيانات المدخلة", fieldErrors: fieldErrors(error) };
+      return { ok: false, code: "VALIDATION", error: t("يرجى مراجعة البيانات المدخلة"), fieldErrors: fieldErrors(error, t) };
     }
     if (isDomainError(error)) {
-      return { ok: false, code: error.code, error: error.message };
+      return { ok: false, code: error.code, error: t.message(error.message) };
     }
     const incident = crypto.randomUUID().slice(0, 8);
     logger.error({ err: error, incident }, "unhandled action error");
-    return { ok: false, code: "INTERNAL", error: `حدث خطأ غير متوقع (رمز: ${incident})` };
+    return { ok: false, code: "INTERNAL", error: t("حدث خطأ غير متوقع (رمز: {0})", [incident]) };
   }
 }
 

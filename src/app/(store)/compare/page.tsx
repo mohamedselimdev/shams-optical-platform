@@ -5,31 +5,39 @@ import { GENDER_LABELS, PRODUCT_TYPE_LABELS, shapeLabel } from "@/i18n/labels";
 import { ClearCompare } from "@/components/store/browsing-history";
 import { EmptyState, Money } from "@/ui/primitives";
 import { ButtonLink } from "@/ui/button";
+import { getT } from "@/i18n/server";
+import { localizeContent } from "@/i18n/localize";
+import type { Metadata } from "next";
 
-export const metadata = { title: "مقارنة المنتجات", robots: { index: false } };
+export async function generateMetadata(): Promise<Metadata> {
+  const t = await getT();
+  return { title: t("مقارنة المنتجات"), robots: { index: false } };
+}
 
 export default async function Compare({ searchParams }: { searchParams: Promise<{ ids?: string }> }) {
+  const t = await getT();
   const ids = ((await searchParams).ids ?? "").split(",").filter((x) => /^[a-z0-9]{10,40}$/i.test(x)).slice(0, 4);
-  const rows = ids.length
-    ? await db.product.findMany({ where: { id: { in: ids }, status: "ACTIVE" }, select: { ...productCardSelect, gender: true, frameShape: true, frameMaterial: true, variants: { ...productCardSelect.variants, select: { ...productCardSelect.variants.select, lensWidthMm: true, bridgeMm: true, templeMm: true } } } })
+  const found = ids.length
+    ? await db.product.findMany({ where: { id: { in: ids }, status: "ACTIVE" }, select: { ...productCardSelect, gender: true, frameShape: true, frameMaterial: true, frameMaterialEn: true, variants: { ...productCardSelect.variants, select: { ...productCardSelect.variants.select, lensWidthMm: true, bridgeMm: true, templeMm: true } } } })
     : [];
-  if (rows.length < 2) return <div className="container-page py-16"><EmptyState title="أضف منتجين على الأقل للمقارنة" description="استخدم زر «أضف للمقارنة» في صفحة المنتج." action={<ButtonLink href="/shop">تصفح المنتجات</ButtonLink>} /></div>;
+  const rows = localizeContent(found, t.locale);
+  if (rows.length < 2) return <div className="container-page py-16"><EmptyState title={t("أضف منتجين على الأقل للمقارنة")} description={t("استخدم زر «أضف للمقارنة» في صفحة المنتج.")} action={<ButtonLink href="/shop">{t("تصفح المنتجات")}</ButtonLink>} /></div>;
   const products = rows.map((r) => ({ row: r, card: toProductCard(r) }));
   const attrs: [string, (r: (typeof rows)[number]) => React.ReactNode][] = [
-    ["السعر", (r) => <Money value={toProductCard(r).price} />],
-    ["الماركة", (r) => r.brand?.name ?? "—"],
-    ["النوع", (r) => PRODUCT_TYPE_LABELS[r.type]],
-    ["لمن", (r) => (r.gender ? GENDER_LABELS[r.gender] : "—")],
-    ["الشكل", (r) => shapeLabel(r.frameShape) || "—"],
-    ["الخامة", (r) => r.frameMaterial ?? "—"],
-    ["المقاس", (r) => (r.variants[0]?.lensWidthMm ? <span className="num" dir="ltr">{r.variants[0].lensWidthMm}□{r.variants[0].bridgeMm} {r.variants[0].templeMm}</span> : "—")],
-    ["عدسات طبية", (r) => (r.prescriptionCompatible ? "✓" : "—")],
-    ["مستقطبة", (r) => (r.polarized ? "✓" : "—")],
-    ["الألوان", (r) => r.variants.map((v) => v.colorName).filter(Boolean).join("، ") || "—"],
+    [t("السعر"), (r) => <Money value={toProductCard(r).price} />],
+    [t("الماركة"), (r) => r.brand?.name ?? "—"],
+    [t("النوع"), (r) => t(PRODUCT_TYPE_LABELS[r.type])],
+    [t("لمن"), (r) => (r.gender ? t(GENDER_LABELS[r.gender]) : "—")],
+    [t("الشكل"), (r) => t(shapeLabel(r.frameShape)) || "—"],
+    [t("الخامة"), (r) => r.frameMaterial ?? "—"],
+    [t("المقاس"), (r) => (r.variants[0]?.lensWidthMm ? <span className="num" dir="ltr">{r.variants[0].lensWidthMm}□{r.variants[0].bridgeMm} {r.variants[0].templeMm}</span> : "—")],
+    [t("عدسات طبية"), (r) => (r.prescriptionCompatible ? "✓" : "—")],
+    [t("مستقطبة"), (r) => (r.polarized ? "✓" : "—")],
+    [t("الألوان"), (r) => r.variants.map((v) => v.colorName).filter(Boolean).join(t("، ")) || "—"],
   ];
   return (
     <div className="container-page py-10">
-      <div className="mb-6 flex items-center justify-between"><h1 className="font-display text-3xl font-semibold">مقارنة المنتجات</h1><ClearCompare /></div>
+      <div className="mb-6 flex items-center justify-between"><h1 className="font-display text-3xl font-semibold">{t("مقارنة المنتجات")}</h1><ClearCompare /></div>
       <div className="overflow-x-auto">
         <table className="w-full min-w-[640px] border-collapse text-sm">
           <thead>

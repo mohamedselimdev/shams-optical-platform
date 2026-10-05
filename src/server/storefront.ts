@@ -3,6 +3,8 @@ import { cookies } from "next/headers";
 import { db } from "./db";
 import { env } from "./env";
 import { getCustomerActor } from "./auth/session";
+import { getLocaleOrDefault } from "@/i18n/server";
+import { localizeContent } from "@/i18n/localize";
 import { CART_COOKIE, ensureCart, findActiveCart } from "@/modules/cart/service";
 
 /**
@@ -55,14 +57,15 @@ export async function guestOrderIds() {
 export async function findShopperOrder(number: string) {
   const actor = await getCustomerActor();
   const guestIds = await guestOrderIds();
-  return db.order.findFirst({
+  const order = await db.order.findFirst({
     where: { number, OR: [...(actor ? [{ customerId: actor.customerId }] : []), ...(guestIds.length ? [{ id: { in: guestIds } }] : [])] },
     include: {
       items: true,
       events: { where: { isPublic: true }, orderBy: { createdAt: "asc" } },
       payments: { orderBy: { createdAt: "desc" }, select: { id: true, status: true, method: true, provider: true, redirectUrl: true, amount: true } },
-      pickupBranch: { select: { name: true, addressLine: true, city: true, phone: true } },
+      pickupBranch: { select: { name: true, nameEn: true, addressLine: true, city: true, phone: true } },
       shipments: { select: { carrier: true, trackingNumber: true, status: true } },
     },
   });
+  return localizeContent(order, await getLocaleOrDefault());
 }

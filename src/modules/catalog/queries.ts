@@ -2,6 +2,9 @@ import "server-only";
 import { z } from "zod";
 import { db } from "@/server/db";
 import type { Prisma } from "@/generated/prisma/client";
+import { getLocaleOrDefault } from "@/i18n/server";
+import { localizeContent } from "@/i18n/localize";
+import type { Locale } from "@/i18n/config";
 import { effectivePrice } from "./service";
 
 /** Storefront listing filters. Parsed from URL search params; unknown values are ignored. */
@@ -75,20 +78,27 @@ export const productCardSelect = {
   id: true,
   slug: true,
   name: true,
+  nameEn: true,
   type: true,
   minPrice: true,
   polarized: true,
   prescriptionCompatible: true,
-  brand: { select: { name: true, slug: true } },
+  brand: { select: { name: true, nameEn: true, slug: true } },
   images: { select: { url: true, alt: true }, orderBy: { sortOrder: "asc" }, take: 2 },
   variants: {
     where: { isActive: true },
-    select: { id: true, price: true, salePrice: true, colorName: true, colorHex: true, inventory: { select: { onHand: true, reserved: true } } },
+    select: { id: true, price: true, salePrice: true, colorName: true, colorNameEn: true, colorHex: true, inventory: { select: { onHand: true, reserved: true } } },
     orderBy: { sortOrder: "asc" },
   },
 } satisfies Prisma.ProductSelect;
 
 type CardRow = Prisma.ProductGetPayload<{ select: typeof productCardSelect }>;
+
+/** Card view of a product row, with names in the visitor's language. */
+async function toCards(rows: CardRow[]) {
+  const locale = await getLocaleOrDefault();
+  return rows.map((r) => toProductCard(localizeContent(r, locale)));
+}
 
 export function toProductCard(p: CardRow) {
   const prices = p.variants.map((v) => ({ eff: effectivePrice(v), base: v.price }));
@@ -100,7 +110,7 @@ export function toProductCard(p: CardRow) {
     slug: p.slug,
     name: p.name,
     type: p.type,
-    brand: p.brand,
+    brand: p.brand ? { name: p.brand.name, slug: p.brand.slug } : null,
     image: p.images[0] ?? null,
     hoverImage: p.images[1] ?? null,
     price: cheapest.eff,
@@ -120,24 +130,32 @@ export async function searchProducts(f: CatalogFilter) {
     db.product.findMany({ where, select: productCardSelect, orderBy: orderBy[f.sort], skip: (f.page - 1) * PAGE_SIZE, take: PAGE_SIZE }),
     db.product.count({ where }),
   ]);
-  return { items: rows.map(toProductCard), total, page: f.page, pageCount: Math.max(1, Math.ceil(total / PAGE_SIZE)) };
+  return { items: await toCards(rows), total, page: f.page, pageCount: Math.max(1, Math.ceil(total / PAGE_SIZE)) };
+}
+
+function facetOptions(rows: [string, string | null][], locale: Locale) {
+  const byValue = new Map<string, string>();
+  for (const [value, en] of rows) if (!byValue.has(value) || en) byValue.set(value, locale === "en" && en ? en : value);
+  return [...byValue].map(([value, label]) => ({ value, label })).sort((a, b) => a.label.localeCompare(b.label, locale));
 }
 
 /** Facet values for the filter sidebar, scoped to active products. */
 export async function catalogFacets() {
   const [brands, shapes, materials, colors, categories] = await Promise.all([
-    db.brand.findMany({ where: { isActive: true, products: { some: { status: "ACTIVE" } } }, select: { slug: true, name: true }, orderBy: [{ sortOrder: "asc" }, { name: "asc" }] }),
+    db.brand.findMany({ where: { isActive: true, products: { some: { status: "ACTIVE" } } }, select: { slug: true, name: true, nameEn: true }, orderBy: [{ sortOrder: "asc" }, { name: "asc" }] }),
     db.product.groupBy({ by: ["frameShape"], where: { status: "ACTIVE", frameShape: { not: null } }, _count: true }),
-    db.product.groupBy({ by: ["frameMaterial"], where: { status: "ACTIVE", frameMaterial: { not: null } }, _count: true }),
-    db.productVariant.groupBy({ by: ["colorName"], where: { isActive: true, colorName: { not: null }, product: { status: "ACTIVE" } }, _count: true }),
-    db.category.findMany({ where: { isActive: true, parentId: null }, select: { slug: true, name: true, children: { where: { isActive: true }, select: { slug: true, name: true } } }, orderBy: { sortOrder: "asc" } }),
+    db.product.groupBy({ by: ["frameMaterial", "frameMaterialEn"], where: { status: "ACTIVE", frameMaterial: { not: null } }, _count: true }),
+    db.productVariant.groupBy({ by: ["colorName", "colorNameEn"], where: { isActive: true, colorName: { not: null }, product: { status: "ACTIVE" } }, _count: true }),
+    db.category.findMany({ where: { isActive: true, parentId: null }, select: { slug: true, name: true, nameEn: true, children: { where: { isActive: true }, select: { slug: true, name: true, nameEn: true } } }, orderBy: { sortOrder: "asc" } }),
   ]);
+  const locale = await getLocaleOrDefault();
   return {
-    brands,
-    categories,
+    brands: localizeContent(brands, locale),
+    categories: localizeContent(categories, locale),
     shapes: shapes.map((s) => s.frameShape!).sort(),
-    materials: materials.map((m) => m.frameMaterial!).sort(),
-    colors: colors.map((c) => c.colorName!).sort(),
+    // The filter value stays the stored (Arabic) attribute; only the label follows the visitor's language.
+    materials: facetOptions(materials.map((m) => [m.frameMaterial!, m.frameMaterialEn]), locale),
+    colors: facetOptions(colors.map((c) => [c.colorName!, c.colorNameEn]), locale),
   };
 }
 
@@ -158,10 +176,11 @@ export async function getProductBySlug(slug: string) {
   });
   if (!product) return null;
   const ratingAgg = await db.review.aggregate({ where: { productId: product.id, status: "APPROVED" }, _avg: { rating: true }, _count: true });
+  const localized = localizeContent(product, await getLocaleOrDefault());
   return {
-    ...product,
+    ...localized,
     // Strip cost from anything that reaches the storefront.
-    variants: product.variants.map(({ costPrice: _cost, inventory, ...v }) => ({
+    variants: localized.variants.map(({ costPrice: _cost, inventory, ...v }) => ({
       ...v,
       effectivePrice: effectivePrice(v),
       available: inventory.reduce((s, i) => s + Math.max(0, i.onHand - i.reserved), 0),
@@ -179,13 +198,13 @@ export async function relatedProducts(productId: string, categoryId: string | nu
     orderBy: { salesCount: "desc" },
     take,
   });
-  return rows.map(toProductCard);
+  return toCards(rows);
 }
 
 export async function productCardsByIds(ids: string[]) {
   if (!ids.length) return [];
   const rows = await db.product.findMany({ where: { id: { in: ids }, status: "ACTIVE" }, select: productCardSelect });
-  const map = new Map(rows.map((r) => [r.id, toProductCard(r)]));
+  const map = new Map((await toCards(rows)).map((c) => [c.id, c]));
   return ids.map((id) => map.get(id)).filter((p): p is ProductCard => Boolean(p));
 }
 
@@ -194,7 +213,7 @@ export async function homeRail(type: string, config: { limit?: number; collectio
   const take = Math.min(Math.max(config.limit ?? 8, 2), 24);
   const base: Prisma.ProductWhereInput = { status: "ACTIVE", variants: { some: { isActive: true } } };
   const query = (where: Prisma.ProductWhereInput, order: Prisma.ProductOrderByWithRelationInput[]) =>
-    db.product.findMany({ where: { ...base, ...where }, select: productCardSelect, orderBy: order, take }).then((rows) => rows.map(toProductCard));
+    db.product.findMany({ where: { ...base, ...where }, select: productCardSelect, orderBy: order, take }).then(toCards);
   switch (type) {
     case "FEATURED_PRODUCTS":
       return query({ isFeatured: true }, [{ salesCount: "desc" }, { id: "asc" }]);
@@ -211,17 +230,18 @@ export async function homeRail(type: string, config: { limit?: number; collectio
 
 export async function storefrontTaxonomy() {
   const [categories, brands] = await Promise.all([
-    db.category.findMany({ where: { isActive: true, parentId: null }, select: { slug: true, name: true, description: true }, orderBy: { sortOrder: "asc" } }),
-    db.brand.findMany({ where: { isActive: true, products: { some: { status: "ACTIVE" } } }, select: { slug: true, name: true, logoUrl: true }, orderBy: [{ sortOrder: "asc" }, { name: "asc" }] }),
+    db.category.findMany({ where: { isActive: true, parentId: null }, select: { slug: true, name: true, nameEn: true, description: true }, orderBy: { sortOrder: "asc" } }),
+    db.brand.findMany({ where: { isActive: true, products: { some: { status: "ACTIVE" } } }, select: { slug: true, name: true, nameEn: true, logoUrl: true }, orderBy: [{ sortOrder: "asc" }, { name: "asc" }] }),
   ]);
-  return { categories, brands };
+  return localizeContent({ categories, brands }, await getLocaleOrDefault());
 }
 
 export async function taxonomyBySlug(kind: "category" | "brand" | "collection", slug: string) {
   const where = { slug, isActive: true };
-  if (kind === "category") return db.category.findFirst({ where, select: { name: true, description: true, slug: true, parent: { select: { name: true, slug: true } } } });
-  if (kind === "brand") return db.brand.findFirst({ where, select: { name: true, description: true, slug: true } });
-  return db.collection.findFirst({ where, select: { name: true, description: true, slug: true } });
+  const locale = await getLocaleOrDefault();
+  if (kind === "category") return localizeContent(await db.category.findFirst({ where, select: { name: true, nameEn: true, description: true, slug: true, parent: { select: { name: true, nameEn: true, slug: true } } } }), locale);
+  if (kind === "brand") return localizeContent(await db.brand.findFirst({ where, select: { name: true, nameEn: true, description: true, slug: true } }), locale);
+  return localizeContent(await db.collection.findFirst({ where, select: { name: true, nameEn: true, description: true, slug: true } }), locale);
 }
 
 /**

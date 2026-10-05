@@ -7,20 +7,21 @@ import { CheckboxField, SelectField, TextArea, TextField } from "@/ui/fields";
 import { SubmitButton } from "@/ui/submit-button";
 import { Button } from "@/ui/button";
 import { Card, CardBody, CardHeader } from "@/ui/primitives";
+import { useT } from "@/i18n/client";
 
 export type VariantRow = {
-  key: string; id?: string; sku: string; barcode: string; colorName: string; colorHex: string; sizeLabel: string;
+  key: string; id?: string; sku: string; barcode: string; colorName: string; colorNameEn: string; colorHex: string; sizeLabel: string;
   lensWidthMm: string; bridgeMm: string; templeMm: string; frameWidthMm: string; price: string; salePrice: string; costPrice: string; isActive: boolean;
 };
 export type ImageRow = { key: string; url: string; alt: string; mediaId?: string };
 export type ProductFormValues = {
-  id?: string; slug: string; name: string; nameEn: string; description: string; type: string; status: string; brandId: string; categoryId: string; supplierId: string;
-  gender: string; frameShape: string; frameMaterial: string; rimType: string; polarized: boolean; uvProtection: boolean; prescriptionCompatible: boolean; isFeatured: boolean;
+  id?: string; slug: string; name: string; nameEn: string; description: string; descriptionEn: string; type: string; status: string; brandId: string; categoryId: string; supplierId: string;
+  gender: string; frameShape: string; frameMaterial: string; frameMaterialEn: string; rimType: string; polarized: boolean; uvProtection: boolean; prescriptionCompatible: boolean; isFeatured: boolean;
   taxRateBps: string; seoTitle: string; seoDescription: string; collectionIds: string[]; variants: VariantRow[]; images: ImageRow[];
 };
 type Opt = { value: string; label: string };
 
-const blankVariant = (): VariantRow => ({ key: crypto.randomUUID(), sku: "", barcode: "", colorName: "", colorHex: "", sizeLabel: "", lensWidthMm: "", bridgeMm: "", templeMm: "", frameWidthMm: "", price: "", salePrice: "", costPrice: "", isActive: true });
+const blankVariant = (): VariantRow => ({ key: crypto.randomUUID(), sku: "", barcode: "", colorName: "", colorNameEn: "", colorHex: "", sizeLabel: "", lensWidthMm: "", bridgeMm: "", templeMm: "", frameWidthMm: "", price: "", salePrice: "", costPrice: "", isActive: true });
 
 export function ProductForm({
   action, upload, initial, options, canPrice, canSeeCost,
@@ -32,6 +33,7 @@ export function ProductForm({
   canPrice: boolean;
   canSeeCost: boolean;
 }) {
+  const t = useT();
   const [variants, setVariants] = useState<VariantRow[]>(initial.variants.length ? initial.variants : [blankVariant()]);
   const [images, setImages] = useState<ImageRow[]>(initial.images);
   const [uploadError, setUploadError] = useState<string | null>(null);
@@ -56,39 +58,41 @@ export function ProductForm({
       {initial.id ? <input type="hidden" name="productId" value={initial.id} /> : null}
       <div className="space-y-6 xl:col-span-2">
         <Card>
-          <CardHeader title="البيانات الأساسية" />
+          <CardHeader title={t("البيانات الأساسية")} />
           <CardBody className="grid gap-4 sm:grid-cols-2">
-            <TextField label="اسم المنتج" name="name" defaultValue={initial.name} required />
-            <TextField label="الاسم بالإنجليزية" name="nameEn" defaultValue={initial.nameEn} dir="ltr" />
-            <TextField label="الرابط (slug)" name="slug" defaultValue={initial.slug} dir="ltr" required hint="أحرف إنجليزية صغيرة وأرقام وشرطات" />
-            <SelectField label="النوع" name="type" defaultValue={initial.type} options={options.types} required />
-            <TextArea label="الوصف" name="description" defaultValue={initial.description} rows={5} className="sm:col-span-2" />
+            <TextField label={t("اسم المنتج")} name="name" defaultValue={initial.name} required />
+            <TextField label={t("الاسم بالإنجليزية")} name="nameEn" defaultValue={initial.nameEn} dir="ltr" />
+            <TextField label={t("الرابط (slug)")} name="slug" defaultValue={initial.slug} dir="ltr" required hint={t("أحرف إنجليزية صغيرة وأرقام وشرطات")} />
+            <SelectField label={t("النوع")} name="type" defaultValue={initial.type} options={options.types} required />
+            <TextArea label={t("الوصف")} name="description" defaultValue={initial.description} rows={5} className="sm:col-span-2" />
+            <TextArea label={t("الوصف بالإنجليزية")} name="descriptionEn" defaultValue={initial.descriptionEn} rows={4} className="sm:col-span-2" dir="ltr" />
           </CardBody>
         </Card>
 
         <Card>
-          <CardHeader title="المتغيرات (اللون والمقاس)" description="كل متغير له SKU ومخزون وسعر مستقل. حذف متغير مستخدم يعطّله ولا يمحوه." actions={<Button size="sm" variant="secondary" onClick={() => setVariants((v) => [...v, blankVariant()])}><Plus className="h-4 w-4" aria-hidden />إضافة متغير</Button>} />
+          <CardHeader title={t("المتغيرات (اللون والمقاس)")} description={t("كل متغير له SKU ومخزون وسعر مستقل. حذف متغير مستخدم يعطّله ولا يمحوه.")} actions={<Button size="sm" variant="secondary" onClick={() => setVariants((v) => [...v, blankVariant()])}><Plus className="h-4 w-4" aria-hidden />{t("إضافة متغير")}</Button>} />
           <CardBody className="space-y-4">
             {variants.map((v, i) => (
               <fieldset key={v.key} className="rounded-lg border border-line p-4">
-                <legend className="px-1 text-sm font-medium">متغير {i + 1}</legend>
+                <legend className="px-1 text-sm font-medium">{t("متغير {0}", [i + 1])}</legend>
                 {v.id ? <input type="hidden" name={`variants.${i}.id`} value={v.id} /> : null}
                 <div className="grid gap-3 sm:grid-cols-4">
                   <TextField label="SKU" name={`variants.${i}.sku`} errorKey={`variants.${i}.sku`} defaultValue={v.sku} dir="ltr" required />
-                  <TextField label="الباركود" name={`variants.${i}.barcode`} defaultValue={v.barcode} dir="ltr" />
-                  <TextField label="اللون" name={`variants.${i}.colorName`} defaultValue={v.colorName} />
-                  <TextField label="كود اللون" name={`variants.${i}.colorHex`} errorKey={`variants.${i}.colorHex`} defaultValue={v.colorHex} placeholder="#1A1A1A" dir="ltr" />
-                  <TextField label="المقاس" name={`variants.${i}.sizeLabel`} defaultValue={v.sizeLabel} placeholder="M" dir="ltr" />
-                  <TextField label="عرض العدسة (مم)" name={`variants.${i}.lensWidthMm`} errorKey={`variants.${i}.lensWidthMm`} defaultValue={v.lensWidthMm} inputMode="numeric" dir="ltr" />
-                  <TextField label="الجسر (مم)" name={`variants.${i}.bridgeMm`} errorKey={`variants.${i}.bridgeMm`} defaultValue={v.bridgeMm} inputMode="numeric" dir="ltr" />
-                  <TextField label="الذراع (مم)" name={`variants.${i}.templeMm`} errorKey={`variants.${i}.templeMm`} defaultValue={v.templeMm} inputMode="numeric" dir="ltr" />
-                  <TextField label="السعر (ج.م)" name={`variants.${i}.price`} errorKey={`variants.${i}.price`} defaultValue={v.price} inputMode="decimal" dir="ltr" required readOnly={!canPrice && Boolean(v.id)} />
-                  <TextField label="سعر التخفيض" name={`variants.${i}.salePrice`} errorKey={`variants.${i}.salePrice`} defaultValue={v.salePrice} inputMode="decimal" dir="ltr" readOnly={!canPrice && Boolean(v.id)} />
-                  {canSeeCost ? <TextField label="التكلفة" name={`variants.${i}.costPrice`} errorKey={`variants.${i}.costPrice`} defaultValue={v.costPrice} inputMode="decimal" dir="ltr" readOnly={!canPrice} /> : null}
+                  <TextField label={t("الباركود")} name={`variants.${i}.barcode`} defaultValue={v.barcode} dir="ltr" />
+                  <TextField label={t("اللون")} name={`variants.${i}.colorName`} defaultValue={v.colorName} />
+                  <TextField label={t("اللون بالإنجليزية")} name={`variants.${i}.colorNameEn`} defaultValue={v.colorNameEn} dir="ltr" />
+                  <TextField label={t("كود اللون")} name={`variants.${i}.colorHex`} errorKey={`variants.${i}.colorHex`} defaultValue={v.colorHex} placeholder="#1A1A1A" dir="ltr" />
+                  <TextField label={t("المقاس")} name={`variants.${i}.sizeLabel`} defaultValue={v.sizeLabel} placeholder="M" dir="ltr" />
+                  <TextField label={t("عرض العدسة (مم)")} name={`variants.${i}.lensWidthMm`} errorKey={`variants.${i}.lensWidthMm`} defaultValue={v.lensWidthMm} inputMode="numeric" dir="ltr" />
+                  <TextField label={t("الجسر (مم)")} name={`variants.${i}.bridgeMm`} errorKey={`variants.${i}.bridgeMm`} defaultValue={v.bridgeMm} inputMode="numeric" dir="ltr" />
+                  <TextField label={t("الذراع (مم)")} name={`variants.${i}.templeMm`} errorKey={`variants.${i}.templeMm`} defaultValue={v.templeMm} inputMode="numeric" dir="ltr" />
+                  <TextField label={t("السعر (ج.م)")} name={`variants.${i}.price`} errorKey={`variants.${i}.price`} defaultValue={v.price} inputMode="decimal" dir="ltr" required readOnly={!canPrice && Boolean(v.id)} />
+                  <TextField label={t("سعر التخفيض")} name={`variants.${i}.salePrice`} errorKey={`variants.${i}.salePrice`} defaultValue={v.salePrice} inputMode="decimal" dir="ltr" readOnly={!canPrice && Boolean(v.id)} />
+                  {canSeeCost ? <TextField label={t("التكلفة")} name={`variants.${i}.costPrice`} errorKey={`variants.${i}.costPrice`} defaultValue={v.costPrice} inputMode="decimal" dir="ltr" readOnly={!canPrice} /> : null}
                   <div className="flex items-end justify-between gap-2 sm:col-span-1">
-                    <CheckboxField name={`variants.${i}.isActive`} label="نشط" defaultChecked={v.isActive} />
+                    <CheckboxField name={`variants.${i}.isActive`} label={t("نشط")} defaultChecked={v.isActive} />
                     {variants.length > 1 ? (
-                      <Button size="icon" variant="ghost" aria-label={`حذف المتغير ${i + 1}`} onClick={() => setVariants((rows) => rows.filter((r) => r.key !== v.key))}>
+                      <Button size="icon" variant="ghost" aria-label={t("حذف المتغير {0}", [i + 1])} onClick={() => setVariants((rows) => rows.filter((r) => r.key !== v.key))}>
                         <Trash2 className="h-4 w-4" aria-hidden />
                       </Button>
                     ) : null}
@@ -96,19 +100,19 @@ export function ProductForm({
                 </div>
               </fieldset>
             ))}
-            {!canPrice ? <p className="text-xs text-ink-muted">لا تملك صلاحية تعديل الأسعار؛ ستُرفض أي محاولة لتغييرها على الخادم.</p> : null}
+            {!canPrice ? <p className="text-xs text-ink-muted">{t("لا تملك صلاحية تعديل الأسعار؛ ستُرفض أي محاولة لتغييرها على الخادم.")}</p> : null}
           </CardBody>
         </Card>
 
         <Card>
           <CardHeader
-            title="الصور"
+            title={t("الصور")}
             actions={
               <>
                 <input ref={fileRef} type="file" accept="image/jpeg,image/png,image/webp" className="sr-only" id="product-upload" onChange={(e) => onFile(e.target.files?.[0])} />
                 <label htmlFor="product-upload" className="inline-flex h-8 cursor-pointer items-center gap-1.5 rounded-md border border-line-strong px-3 text-sm hover:bg-surface-2">
                   <ImagePlus className="h-4 w-4" aria-hidden />
-                  {uploading ? "جارٍ الرفع…" : "رفع صورة"}
+                  {uploading ? t("جارٍ الرفع…") : t("رفع صورة")}
                 </label>
               </>
             }
@@ -123,44 +127,44 @@ export function ProductForm({
                     <img src={img.url} alt={img.alt || ""} className="aspect-[4/3] w-full rounded bg-surface-2 object-contain" />
                     <input type="hidden" name={`images.${i}.url`} value={img.url} />
                     {img.mediaId ? <input type="hidden" name={`images.${i}.mediaId`} value={img.mediaId} /> : null}
-                    <input name={`images.${i}.alt`} defaultValue={img.alt} placeholder="وصف الصورة (لقارئ الشاشة)" className="mt-2 h-8 w-full rounded border border-line px-2 text-xs" aria-label="وصف الصورة" />
+                    <input name={`images.${i}.alt`} defaultValue={img.alt} placeholder={t("وصف الصورة (لقارئ الشاشة)")} className="mt-2 h-8 w-full rounded border border-line px-2 text-xs" aria-label={t("وصف الصورة")} />
                     <div className="mt-1 flex justify-between">
-                      <Button size="icon" variant="ghost" aria-label="تقديم الصورة" disabled={i === 0} onClick={() => setImages((rows) => { const c = [...rows]; [c[i - 1], c[i]] = [c[i], c[i - 1]]; return c; })}><ArrowUp className="h-4 w-4" aria-hidden /></Button>
-                      <Button size="icon" variant="ghost" aria-label="حذف الصورة" onClick={() => setImages((rows) => rows.filter((r) => r.key !== img.key))}><Trash2 className="h-4 w-4" aria-hidden /></Button>
+                      <Button size="icon" variant="ghost" aria-label={t("تقديم الصورة")} disabled={i === 0} onClick={() => setImages((rows) => { const c = [...rows]; [c[i - 1], c[i]] = [c[i], c[i - 1]]; return c; })}><ArrowUp className="h-4 w-4" aria-hidden /></Button>
+                      <Button size="icon" variant="ghost" aria-label={t("حذف الصورة")} onClick={() => setImages((rows) => rows.filter((r) => r.key !== img.key))}><Trash2 className="h-4 w-4" aria-hidden /></Button>
                     </div>
                   </li>
                 ))}
               </ul>
-            ) : <p className="text-sm text-ink-muted">لا توجد صور. الصورة الأولى هي الصورة الرئيسية.</p>}
+            ) : <p className="text-sm text-ink-muted">{t("لا توجد صور. الصورة الأولى هي الصورة الرئيسية.")}</p>}
           </CardBody>
         </Card>
 
         <Card>
-          <CardHeader title="محركات البحث" />
+          <CardHeader title={t("محركات البحث")} />
           <CardBody className="grid gap-4">
-            <TextField label="عنوان SEO" name="seoTitle" defaultValue={initial.seoTitle} />
-            <TextArea label="وصف SEO" name="seoDescription" defaultValue={initial.seoDescription} rows={2} />
+            <TextField label={t("عنوان SEO")} name="seoTitle" defaultValue={initial.seoTitle} />
+            <TextArea label={t("وصف SEO")} name="seoDescription" defaultValue={initial.seoDescription} rows={2} />
           </CardBody>
         </Card>
       </div>
 
       <div className="space-y-6">
         <Card>
-          <CardHeader title="النشر" />
+          <CardHeader title={t("النشر")} />
           <CardBody className="space-y-4">
-            <SelectField label="الحالة" name="status" defaultValue={initial.status} options={options.statuses} />
-            <CheckboxField name="isFeatured" label="منتج مميز في الصفحة الرئيسية" defaultChecked={initial.isFeatured} />
-            <SubmitButton className="w-full" pendingLabel="جارٍ الحفظ…">حفظ المنتج</SubmitButton>
+            <SelectField label={t("الحالة")} name="status" defaultValue={initial.status} options={options.statuses} />
+            <CheckboxField name="isFeatured" label={t("منتج مميز في الصفحة الرئيسية")} defaultChecked={initial.isFeatured} />
+            <SubmitButton className="w-full" pendingLabel={t("جارٍ الحفظ…")}>{t("حفظ المنتج")}</SubmitButton>
           </CardBody>
         </Card>
         <Card>
-          <CardHeader title="التصنيف" />
+          <CardHeader title={t("التصنيف")} />
           <CardBody className="space-y-4">
-            <SelectField label="الماركة" name="brandId" defaultValue={initial.brandId} options={options.brands} placeholder="بدون" />
-            <SelectField label="التصنيف" name="categoryId" defaultValue={initial.categoryId} options={options.categories} placeholder="بدون" />
-            <SelectField label="المورد" name="supplierId" defaultValue={initial.supplierId} options={options.suppliers} placeholder="بدون" />
+            <SelectField label={t("الماركة")} name="brandId" defaultValue={initial.brandId} options={options.brands} placeholder={t("بدون")} />
+            <SelectField label={t("التصنيف")} name="categoryId" defaultValue={initial.categoryId} options={options.categories} placeholder={t("بدون")} />
+            <SelectField label={t("المورد")} name="supplierId" defaultValue={initial.supplierId} options={options.suppliers} placeholder={t("بدون")} />
             <fieldset>
-              <legend className="mb-2 text-sm font-medium text-ink-soft">المجموعات</legend>
+              <legend className="mb-2 text-sm font-medium text-ink-soft">{t("المجموعات")}</legend>
               <div className="space-y-2">
                 {options.collections.map((c) => (
                   <CheckboxField key={c.value} name="collectionIds[]" value={c.value} label={c.label} defaultChecked={initial.collectionIds.includes(c.value)} />
@@ -170,16 +174,17 @@ export function ProductForm({
           </CardBody>
         </Card>
         <Card>
-          <CardHeader title="مواصفات النظارة" />
+          <CardHeader title={t("مواصفات النظارة")} />
           <CardBody className="space-y-4">
-            <SelectField label="الفئة" name="gender" defaultValue={initial.gender} options={options.genders} placeholder="غير محدد" />
-            <TextField label="شكل الإطار" name="frameShape" defaultValue={initial.frameShape} placeholder="مستطيل، دائري…" />
-            <TextField label="الخامة" name="frameMaterial" defaultValue={initial.frameMaterial} placeholder="أسيتات، معدن…" />
-            <TextField label="نوع الإطار" name="rimType" defaultValue={initial.rimType} placeholder="كامل، نصف إطار…" />
-            <CheckboxField name="prescriptionCompatible" label="يقبل تركيب عدسات طبية" defaultChecked={initial.prescriptionCompatible} />
-            <CheckboxField name="polarized" label="مستقطب (Polarized)" defaultChecked={initial.polarized} />
-            <CheckboxField name="uvProtection" label="حماية من الأشعة فوق البنفسجية" defaultChecked={initial.uvProtection} />
-            <TextField label="نسبة الضريبة (نقطة أساس)" name="taxRateBps" defaultValue={initial.taxRateBps} hint="اتركه فارغاً لاستخدام النسبة الافتراضية (1400 = 14%)" inputMode="numeric" dir="ltr" />
+            <SelectField label={t("الفئة")} name="gender" defaultValue={initial.gender} options={options.genders} placeholder={t("غير محدد")} />
+            <TextField label={t("شكل الإطار")} name="frameShape" defaultValue={initial.frameShape} placeholder={t("مستطيل، دائري…")} />
+            <TextField label={t("الخامة")} name="frameMaterial" defaultValue={initial.frameMaterial} placeholder={t("أسيتات، معدن…")} />
+            <TextField label={t("الخامة بالإنجليزية")} name="frameMaterialEn" defaultValue={initial.frameMaterialEn} placeholder="Acetate, metal…" dir="ltr" />
+            <TextField label={t("نوع الإطار")} name="rimType" defaultValue={initial.rimType} placeholder={t("كامل، نصف إطار…")} />
+            <CheckboxField name="prescriptionCompatible" label={t("يقبل تركيب عدسات طبية")} defaultChecked={initial.prescriptionCompatible} />
+            <CheckboxField name="polarized" label={t("مستقطب (Polarized)")} defaultChecked={initial.polarized} />
+            <CheckboxField name="uvProtection" label={t("حماية من الأشعة فوق البنفسجية")} defaultChecked={initial.uvProtection} />
+            <TextField label={t("نسبة الضريبة (نقطة أساس)")} name="taxRateBps" defaultValue={initial.taxRateBps} hint={t("اتركه فارغاً لاستخدام النسبة الافتراضية (1400 = 14%)")} inputMode="numeric" dir="ltr" />
           </CardBody>
         </Card>
       </div>

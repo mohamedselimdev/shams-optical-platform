@@ -35,7 +35,7 @@ src/
                       storage, jobs, counters, logger, server-action helpers, storefront context
   components/         UI shared by pages (admin/, store/, rx/)
   ui/                 Design-system primitives (buttons, fields, ActionForm, tables, badges)
-  i18n/               Arabic labels and tones for every enum (single place to add English later)
+  i18n/               locale/theme config, translator, English catalog (messages/en.json), enum labels and tones
   lib/                Pure helpers: money, Cairo time, optics units, Egypt governorates, validation
 prisma/               Schema, migrations, seed
 scripts/              worker.ts (job loop), demo-orders.ts (development data)
@@ -117,10 +117,29 @@ sessions, attribution and funnels are computed in SQL. Purchases are recorded se
 `placeOrder`. No IPs are stored.
 
 ## Localisation
-Arabic is the default (`<html lang="ar" dir="rtl">`), prices are EGP formatted with `ar-EG`, dates
-use the `Africa/Cairo` zone (report ranges are Cairo business days, DST-aware). All enum labels live
-in `src/i18n/labels.ts`; catalog entities carry `nameEn` fields. Adding English means introducing a
-locale segment and a second label table, not touching business logic.
+Arabic is the default (`<html lang="ar" dir="rtl">`) and English is the second locale
+(`lang="en" dir="ltr"`). The visitor's choice is the `shams_locale` cookie; there are no locale URL
+segments.
+
+* **Interface text** uses the Arabic source string as the key (gettext style): `t("أضف إلى السلة")`.
+  Server components get `t` from `getT()`, client components from `useT()`. A missing translation
+  falls back to Arabic. `t.message()` translates messages built elsewhere (domain errors, Zod
+  issues, stored order events) by matching the catalog's `{0}` templates.
+* **Formatting** goes through `t.money`, `t.number`, `t.percent` and `t.date` (`ar-EG` / `en-EG`,
+  `Africa/Cairo`).
+* **Database content** has optional `…En` twins (`name`/`nameEn`, `description`/`descriptionEn`,
+  `blocks`/`blocksEn`…). Queries that feed pages pass rows through `localizeContent(rows, locale)`,
+  which swaps in the filled English values. Filters keep the stored Arabic value; only labels change.
+* **Catalog upkeep:** `node scripts/i18n-extract.mjs` lists every Arabic string in `src/`
+  (`--missing` prints untranslated ones, `--prune` drops stale entries); `src/i18n/i18n.test.ts`
+  fails CI when a string has no English translation or a placeholder is lost.
+* **Layout** uses logical utilities (`ms-`, `pe-`, `start-`, `border-e`) so the same markup works in
+  both directions; direction-specific transforms use the `rtl:`/`ltr:` variants.
+
+Dark mode: the `shams_theme` cookie (`system`, `light`, `dark`) is rendered as `data-theme` on
+`<html>`. Colours are CSS tokens (`--color-surface`, `--color-ink`, …) redefined for dark mode in
+`globals.css`, both for the explicit choice and for `prefers-color-scheme` when set to system.
+`--color-night`/`--color-on-night` stay dark in both themes for the hero, sidebar and login panel.
 
 ## Deployment model
 * Web: `npm run build && npm start` behind TLS (any Node host or container).

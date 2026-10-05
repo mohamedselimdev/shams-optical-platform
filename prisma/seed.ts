@@ -14,6 +14,7 @@ import { applyMovement } from "../src/modules/inventory/ledger";
 import { GOVERNORATES } from "../src/lib/egypt";
 import { frameSvg, type FrameShape } from "../src/lib/frame-art";
 import { parseBlocks } from "../src/modules/cms/blocks";
+import { applyEnglishContent } from "./seed-english";
 
 const EGP = (v: number) => Math.round(v * 100);
 
@@ -275,6 +276,8 @@ async function main() {
   await db.homeSection.create({ data: { type: "COLLECTION", title: "مجموعة النيل", config: { collectionSlug: "nile-edit", limit: 4 }, sortOrder: 3 } });
   await db.homeSection.create({ data: { type: "BRANDS", title: "ماركاتنا", config: {}, sortOrder: 4 } });
   await db.homeSection.create({ data: { type: "NEW_ARRIVALS", title: "وصل حديثاً", config: { limit: 8 }, sortOrder: 5 } });
+
+  await applyEnglishContent(db);
 
   console.log("\n✔ Seed complete");
   console.log(`  Owner login: owner@shams.example / ${ownerPassword}`);

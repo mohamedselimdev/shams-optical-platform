@@ -2,6 +2,7 @@
 
 import { useEffect, useSyncExternalStore } from "react";
 import { usePathname, useSearchParams } from "next/navigation";
+import { useT } from "@/i18n/client";
 
 /**
  * First-party analytics client. Nothing is sent until the shopper consents (when consent is required);
@@ -36,6 +37,7 @@ export function track(event: EventInput) {
 }
 
 export function Analytics({ active, requireConsent }: { active: boolean; requireConsent: boolean }) {
+  const t = useT();
   const pathname = usePathname();
   const search = useSearchParams();
   // Cookie-backed consent; "unknown" during SSR so the banner never flashes for returning visitors.
@@ -53,11 +55,11 @@ export function Analytics({ active, requireConsent }: { active: boolean; require
     listeners.forEach((l) => l());
   };
   return (
-    <div role="dialog" aria-live="polite" aria-label="ملفات تعريف الارتباط" className="fixed inset-x-3 bottom-3 z-50 mx-auto max-w-xl rounded-lg border border-line bg-surface p-4 shadow-pop sm:inset-x-auto sm:end-4">
-      <p className="text-sm text-ink-soft">نستخدم ملفات تعريف ارتباط أساسية لتشغيل السلة وتسجيل الدخول. بموافقتك نستخدم أيضاً إحصاءات داخلية مجهولة لتحسين المتجر، ولا نشاركها مع أي طرف خارجي.</p>
+    <div role="dialog" aria-live="polite" aria-label={t("ملفات تعريف الارتباط")} className="fixed inset-x-3 bottom-3 z-50 mx-auto max-w-xl rounded-lg border border-line bg-surface p-4 shadow-pop sm:inset-x-auto sm:end-4">
+      <p className="text-sm text-ink-soft">{t("نستخدم ملفات تعريف ارتباط أساسية لتشغيل السلة وتسجيل الدخول. بموافقتك نستخدم أيضاً إحصاءات داخلية مجهولة لتحسين المتجر، ولا نشاركها مع أي طرف خارجي.")}</p>
       <div className="mt-3 flex gap-2">
-        <button type="button" onClick={() => choose("granted")} className="h-9 rounded-md bg-ink px-4 text-sm font-medium text-surface">موافق</button>
-        <button type="button" onClick={() => choose("denied")} className="h-9 rounded-md border border-line-strong px-4 text-sm">الأساسية فقط</button>
+        <button type="button" onClick={() => choose("granted")} className="h-9 rounded-md bg-ink px-4 text-sm font-medium text-surface">{t("موافق")}</button>
+        <button type="button" onClick={() => choose("denied")} className="h-9 rounded-md border border-line-strong px-4 text-sm">{t("الأساسية فقط")}</button>
       </div>
     </div>
   );

@@ -1,9 +1,9 @@
 # شمس | SHAMS — Optical retail platform
 
-Commerce and operations platform for an Egyptian optical chain: Arabic-first (RTL) storefront with a
-prescription-lens configurator, multi-branch inventory, orders, payments, returns, CRM, purchasing,
-promotions and loyalty, staff RBAC, CMS, first-party analytics, reports and a point of sale, all in
-one Next.js + PostgreSQL modular monolith.
+Commerce and operations platform for an Egyptian optical chain: Arabic-first (RTL) storefront and
+dashboard, also in English, with light and dark themes, a prescription-lens configurator,
+multi-branch inventory, orders, payments, returns, CRM, purchasing, promotions and loyalty, staff
+RBAC, CMS, first-party analytics, reports and a point of sale, all in one Next.js + PostgreSQL modular monolith.
 
 * [Architecture](docs/ARCHITECTURE.md)
 * [Database](docs/DATABASE.md)
@@ -60,4 +60,8 @@ REQUIRES_EXTERNAL_CONFIG on **Dashboard → Integrations** until configured.
 
 * Business logic lives in `src/modules/*`; pages and components only render and submit.
 * Money is integer piasters; optics are hundredths of a diopter. See `src/lib`.
-* User-facing labels are centralised in `src/i18n/labels.ts`.
+* Interface text is written in Arabic and wrapped in `t()`; English lives in `src/i18n/messages/en.json`.
+  Run `node scripts/i18n-extract.mjs --missing` after adding text (the unit tests fail on a missing
+  translation). Enum labels are centralised in `src/i18n/labels.ts`.
+* Database content that visitors see has optional English twins (`nameEn`, `descriptionEn`…).
+  `npm run db:seed-english` adds the English sample content to a database seeded before they existed.

@@ -13,6 +13,9 @@ PostgreSQL 16, managed by Prisma migrations in `prisma/migrations`. The schema
 * IDs are text (cuid). Human-facing numbers (orders `SH-…`, POs, transfers, returns) come from the
   `counter` table, incremented inside the creating transaction.
 * Table names are snake_case (`@@map`).
+* **English content**: visitor-facing text columns have an optional English twin with an `En`
+  suffix (`name`/`nameEn`, `description`/`descriptionEn`, `colorName`/`colorNameEn`, `blocks`/`blocksEn`…).
+  Arabic is required and is the fallback; filters and unique keys always use the Arabic column.
 
 ## Domain map
 
@@ -37,7 +40,7 @@ PostgreSQL 16, managed by Prisma migrations in `prisma/migrations`. The schema
 ## Snapshots
 
 Orders never read live catalog data after placement. `order` stores contact, address, totals,
-tax, discount and shipping; `order_item` stores product and variant names, SKU, color, unit price,
+tax, discount, shipping and the interface language (`locale`, used for customer emails); `order_item` stores product and variant names (Arabic and, when available, English), SKU, color, unit price,
 unit cost, discount allocation, tax and the full lens configuration and prescription values used.
 Changing a price, lens table or prescription later has no effect on existing orders (covered by an
 integration test).

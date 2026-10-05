@@ -5,9 +5,10 @@ import Link from "next/link";
 import { ActionForm, type FormAction } from "@/ui/action-form";
 import { SubmitButton } from "@/ui/submit-button";
 import { PrescriptionFields } from "@/components/rx/prescription-fields";
-import { formatMoney } from "@/lib/money";
+
 import { cn } from "@/ui/cn";
 import { track } from "./analytics";
+import { useT } from "@/i18n/client";
 
 export type PurchaseVariant = {
   id: string;
@@ -51,6 +52,7 @@ const LEVEL = { none: "غير متوفر", low: "كمية محدودة", ok: "م
  * the server re-prices everything from the database when the item is added and again at checkout.
  */
 export function ProductPurchase({ productId, variants, lens, savedRx, signedIn, maxQty, branches, availability, addAction, loginHref }: Props) {
+  const t = useT();
   const [variantId, setVariantId] = useState(() => (variants.find((v) => v.available > 0) ?? variants[0]).id);
   const [withLens, setWithLens] = useState(false);
   const [typeId, setTypeId] = useState(lens?.types[0]?.id ?? "");
@@ -83,14 +85,14 @@ export function ProductPurchase({ productId, variants, lens, savedRx, signedIn, 
       <input type="hidden" name="variantId" value={variantId} />
 
       <div className="flex items-baseline gap-3">
-        <span className="num font-display text-3xl font-semibold">{formatMoney(variant.effectivePrice + lensPrice)}</span>
-        {variant.price > variant.effectivePrice ? <span className="num text-ink-faint line-through">{formatMoney(variant.price + lensPrice)}</span> : null}
-        {lensPrice ? <span className="text-sm text-ink-muted">شامل العدسات</span> : null}
+        <span className="num font-display text-3xl font-semibold">{t.money(variant.effectivePrice + lensPrice)}</span>
+        {variant.price > variant.effectivePrice ? <span className="num text-ink-faint line-through">{t.money(variant.price + lensPrice)}</span> : null}
+        {lensPrice ? <span className="text-sm text-ink-muted">{t("شامل العدسات")}</span> : null}
       </div>
 
       {variants.length > 1 ? (
         <fieldset>
-          <legend className="mb-2 text-sm font-medium">اللون والمقاس: <span className="text-ink-muted">{[variant.colorName, variant.sizeLabel].filter(Boolean).join(" / ")}</span></legend>
+          <legend className="mb-2 text-sm font-medium">{t("اللون والمقاس:")}{" "}<span className="text-ink-muted">{[variant.colorName, variant.sizeLabel].filter(Boolean).join(" / ")}</span></legend>
           <div className="flex flex-wrap gap-2">
             {variants.map((v) => (
               <button
@@ -108,27 +110,26 @@ export function ProductPurchase({ productId, variants, lens, savedRx, signedIn, 
         </fieldset>
       ) : null}
 
-
       {lens && lens.types.length ? (
         <fieldset className="space-y-3">
-          <legend className="mb-2 text-sm font-medium">العدسات</legend>
+          <legend className="mb-2 text-sm font-medium">{t("العدسات")}</legend>
           <div className="grid grid-cols-2 gap-2">
             <label className={cn("cursor-pointer rounded-lg border p-3 text-sm", !withLens ? "border-ink ring-1 ring-ink" : "border-line-strong")}>
               <input type="radio" name="withLens" value="0" checked={!withLens} onChange={() => setWithLens(false)} className="sr-only" />
-              <span className="font-medium">الإطار فقط</span>
-              <span className="block text-ink-muted">بدون عدسات طبية</span>
+              <span className="font-medium">{t("الإطار فقط")}</span>
+              <span className="block text-ink-muted">{t("بدون عدسات طبية")}</span>
             </label>
             <label className={cn("cursor-pointer rounded-lg border p-3 text-sm", withLens ? "border-ink ring-1 ring-ink" : "border-line-strong")}>
               <input type="radio" name="withLens" value="1" checked={withLens} onChange={() => { setWithLens(true); track({ name: "lens_configured", productId }); }} className="sr-only" />
-              <span className="font-medium">مع عدسات</span>
-              <span className="block text-ink-muted">طبية أو بدون مقاس</span>
+              <span className="font-medium">{t("مع عدسات")}</span>
+              <span className="block text-ink-muted">{t("طبية أو بدون مقاس")}</span>
             </label>
           </div>
 
           {withLens ? (
             <div className="space-y-5 rounded-lg border border-line bg-surface p-4">
               <div>
-                <p className="mb-2 text-sm font-medium">١. نوع العدسة</p>
+                <p className="mb-2 text-sm font-medium">{t("١. نوع العدسة")}</p>
                 <div className="space-y-2">
                   {lens.types.map((lensType) => (
                     <label key={lensType.id} className={cn("flex cursor-pointer items-start gap-3 rounded-md border p-3 text-sm", lensType.id === typeId ? "border-ink bg-surface-2" : "border-line")}>
@@ -139,28 +140,28 @@ export function ProductPurchase({ productId, variants, lens, savedRx, signedIn, 
                 </div>
               </div>
               <div>
-                <p className="mb-2 text-sm font-medium">٢. سُمك العدسة (معامل الانكسار)</p>
+                <p className="mb-2 text-sm font-medium">{t("٢. سُمك العدسة (معامل الانكسار)")}</p>
                 <div className="grid gap-2 sm:grid-cols-2">
                   {lens.indexes.filter((i) => indexPrices.has(i.id)).map((i) => (
                     <label key={i.id} className={cn("flex cursor-pointer items-center justify-between gap-2 rounded-md border p-3 text-sm", i.id === effectiveIndexId ? "border-ink bg-surface-2" : "border-line")}>
                       <span className="flex items-center gap-2"><input type="radio" name="lensIndexId" value={i.id} checked={i.id === effectiveIndexId} onChange={() => setIndexId(i.id)} className="accent-ink" />{i.name}</span>
-                      <span className="num text-ink-muted">{formatMoney(indexPrices.get(i.id)!)}</span>
+                      <span className="num text-ink-muted">{t.money(indexPrices.get(i.id)!)}</span>
                     </label>
                   ))}
                 </div>
               </div>
               {groups.length ? (
                 <div>
-                  <p className="mb-2 text-sm font-medium">٣. إضافات (اختياري)</p>
+                  <p className="mb-2 text-sm font-medium">{t("٣. إضافات (اختياري)")}</p>
                   <div className="space-y-3">
                     {groups.map((g) => (
                       <div key={g}>
-                        <p className="mb-1 text-xs text-ink-muted">{lens.groupLabels[g] ?? g}</p>
+                        <p className="mb-1 text-xs text-ink-muted">{lens.groupLabels[g] ? t(lens.groupLabels[g]) : g}</p>
                         <div className="flex flex-wrap gap-2">
                           {compatibleOptions.filter((o) => o.group === g).map((o) => (
                             <label key={o.id} className={cn("flex cursor-pointer items-center gap-2 rounded-full border px-3 py-1.5 text-sm", optionIds.includes(o.id) ? "border-ink bg-ink text-surface" : "border-line-strong")}>
                               <input type="checkbox" name="lensOptionIds[]" value={o.id} checked={optionIds.includes(o.id)} onChange={() => toggleOption(o.id, o.group, o.exclusive)} className="sr-only" />
-                              {o.name} <span className="num opacity-75">+{formatMoney(o.price)}</span>
+                              {o.name} <span className="num opacity-75">+{t.money(o.price)}</span>
                             </label>
                           ))}
                         </div>
@@ -172,21 +173,21 @@ export function ProductPurchase({ productId, variants, lens, savedRx, signedIn, 
 
               {needsRx ? (
                 <div className="space-y-3">
-                  <p className="text-sm font-medium">٤. الوصفة الطبية</p>
+                  <p className="text-sm font-medium">{t("٤. الوصفة الطبية")}</p>
                   {!signedIn ? (
                     <p className="rounded-md bg-info-soft p-3 text-sm text-info">
-                      لحماية بياناتك الطبية نحفظ الوصفات في حسابك فقط. <Link href={loginHref} className="font-medium underline">سجّل الدخول أو أنشئ حساباً</Link> لإكمال طلب العدسات الطبية.
+                      {t("لحماية بياناتك الطبية نحفظ الوصفات في حسابك فقط.")}{" "}<Link href={loginHref} className="font-medium underline">{t("سجّل الدخول أو أنشئ حساباً")}</Link> {t("لإكمال طلب العدسات الطبية.")}
                     </p>
                   ) : (
                     <>
                       <div className="flex flex-wrap gap-2 text-sm">
-                        {savedRx?.length ? <RxTab value="SAVED" current={rxSource} onChange={setRxSource}>وصفة محفوظة</RxTab> : null}
-                        <RxTab value="ENTERED" current={rxSource} onChange={setRxSource}>إدخال القيم</RxTab>
-                        <RxTab value="UPLOADED" current={rxSource} onChange={setRxSource}>رفع صورة الوصفة</RxTab>
+                        {savedRx?.length ? <RxTab value="SAVED" current={rxSource} onChange={setRxSource}>{t("وصفة محفوظة")}</RxTab> : null}
+                        <RxTab value="ENTERED" current={rxSource} onChange={setRxSource}>{t("إدخال القيم")}</RxTab>
+                        <RxTab value="UPLOADED" current={rxSource} onChange={setRxSource}>{t("رفع صورة الوصفة")}</RxTab>
                       </div>
                       <input type="hidden" name="rxSource" value={rxSource} />
                       {rxSource === "SAVED" && savedRx?.length ? (
-                        <select name="prescriptionId" className="h-10 w-full rounded-md border border-line-strong bg-surface px-3 text-sm" defaultValue={savedRx[0].id} aria-label="اختر الوصفة">
+                        <select name="prescriptionId" className="h-10 w-full rounded-md border border-line-strong bg-surface px-3 text-sm" defaultValue={savedRx[0].id} aria-label={t("اختر الوصفة")}>
                           {savedRx.map((r) => <option key={r.id} value={r.id}>{r.label}</option>)}
                         </select>
                       ) : null}
@@ -194,10 +195,10 @@ export function ProductPurchase({ productId, variants, lens, savedRx, signedIn, 
                       {rxSource === "UPLOADED" ? (
                         <div className="space-y-2 text-sm">
                           <input type="file" name="rxFile" accept="image/jpeg,image/png,image/webp,application/pdf" required className="block w-full text-sm file:me-3 file:rounded-md file:border-0 file:bg-surface-2 file:px-3 file:py-2" />
-                          <p className="text-xs text-ink-muted">JPG أو PNG أو PDF حتى 8 ميجابايت. يراجع أخصائي البصريات الوصفة قبل التصنيع وقد نتواصل معك لتأكيد القيم.</p>
+                          <p className="text-xs text-ink-muted">{t("JPG أو PNG أو PDF حتى 8 ميجابايت. يراجع أخصائي البصريات الوصفة قبل التصنيع وقد نتواصل معك لتأكيد القيم.")}</p>
                         </div>
                       ) : null}
-                      {rxSource !== "SAVED" ? <input name="rxLabel" placeholder="اسم الوصفة (مثلاً: نظارة القراءة)" className="h-10 w-full rounded-md border border-line-strong bg-surface px-3 text-sm" maxLength={80} /> : null}
+                      {rxSource !== "SAVED" ? <input name="rxLabel" placeholder={t("اسم الوصفة (مثلاً: نظارة القراءة)")} className="h-10 w-full rounded-md border border-line-strong bg-surface px-3 text-sm" maxLength={80} /> : null}
                     </>
                   )}
                 </div>
@@ -209,26 +210,26 @@ export function ProductPurchase({ productId, variants, lens, savedRx, signedIn, 
 
       <div className="flex items-end gap-3">
         <label className="text-sm">
-          <span className="mb-1 block font-medium">الكمية</span>
+          <span className="mb-1 block font-medium">{t("الكمية")}</span>
           <select name="quantity" defaultValue="1" className="h-12 w-20 rounded-md border border-line-strong bg-surface px-2 text-center">
             {Array.from({ length: Math.max(1, Math.min(maxQty, variant.available || 1)) }, (_, i) => <option key={i + 1} value={i + 1}>{i + 1}</option>)}
           </select>
         </label>
-        <SubmitButton size="lg" className="flex-1" disabled={outOfStock || Boolean(needsRx && !signedIn)} pendingLabel="جارٍ الإضافة…" onClick={() => track({ name: "add_to_cart", productId, variantId, value: variant.effectivePrice + lensPrice })}>
-          {outOfStock ? "نفد من المخزون" : "أضف إلى السلة"}
+        <SubmitButton size="lg" className="flex-1" disabled={outOfStock || Boolean(needsRx && !signedIn)} pendingLabel={t("جارٍ الإضافة…")} onClick={() => track({ name: "add_to_cart", productId, variantId, value: variant.effectivePrice + lensPrice })}>
+          {outOfStock ? t("نفد من المخزون") : t("أضف إلى السلة")}
         </SubmitButton>
       </div>
 
       {branches.length ? (
         <details className="rounded-lg border border-line bg-surface p-3 text-sm">
-          <summary className="cursor-pointer font-medium">التوفر في الفروع</summary>
+          <summary className="cursor-pointer font-medium">{t("التوفر في الفروع")}</summary>
           <ul className="mt-2 space-y-1">
             {branches.map((b) => {
               const level = availability.find((a) => a.branchId === b.id && a.variantId === variantId)?.level ?? "none";
               return (
                 <li key={b.id} className="flex justify-between">
                   <span>{b.name}</span>
-                  <span className={level === "none" ? "text-ink-faint" : level === "low" ? "text-warning" : "text-success"}>{LEVEL[level]}</span>
+                  <span className={level === "none" ? "text-ink-faint" : level === "low" ? "text-warning" : "text-success"}>{t(LEVEL[level])}</span>
                 </li>
               );
             })}

@@ -4,6 +4,7 @@ import { prismaAdapter } from "better-auth/adapters/prisma";
 import { nextCookies } from "better-auth/next-js";
 import { db } from "../db";
 import { env } from "../env";
+import { getTOrDefault } from "@/i18n/server";
 import { sendAuthEmail } from "../notifications/email";
 
 /**
@@ -25,10 +26,11 @@ export const auth = betterAuth({
     revokeSessionsOnPasswordReset: true,
     resetPasswordTokenExpiresIn: 60 * 30,
     sendResetPassword: async ({ user, url }) => {
+      const t = await getTOrDefault();
       await sendAuthEmail({
         to: user.email,
-        subject: "إعادة تعيين كلمة المرور — شمس",
-        text: `مرحباً ${user.name}،\n\nلإعادة تعيين كلمة المرور اضغط على الرابط التالي (صالح لمدة 30 دقيقة):\n${url}\n\nإذا لم تطلب ذلك يمكنك تجاهل هذه الرسالة.`,
+        subject: t("إعادة تعيين كلمة المرور — شمس"),
+        text: t("مرحباً {0}،\n\nلإعادة تعيين كلمة المرور اضغط على الرابط التالي (صالح لمدة 30 دقيقة):\n{1}\n\nإذا لم تطلب ذلك يمكنك تجاهل هذه الرسالة.", [user.name, url]),
       });
     },
   },
@@ -37,10 +39,11 @@ export const auth = betterAuth({
     autoSignInAfterVerification: true,
     expiresIn: 60 * 60 * 24,
     sendVerificationEmail: async ({ user, url }) => {
+      const t = await getTOrDefault();
       await sendAuthEmail({
         to: user.email,
-        subject: "تأكيد البريد الإلكتروني — شمس",
-        text: `مرحباً ${user.name}،\n\nلتأكيد بريدك الإلكتروني اضغط على الرابط التالي:\n${url}`,
+        subject: t("تأكيد البريد الإلكتروني — شمس"),
+        text: t("مرحباً {0}،\n\nلتأكيد بريدك الإلكتروني اضغط على الرابط التالي:\n{1}", [user.name, url]),
       });
     },
   },

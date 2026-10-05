@@ -6,11 +6,13 @@ import { z } from "zod";
 import { formToNested, runAction, type ActionResult } from "@/server/action";
 import { requireStaff } from "@/server/auth/session";
 import { completeReturn, createReturn, inspectReturn, receiveReturn, reviewReturn } from "@/modules/returns/service";
+import { getT } from "@/i18n/server";
 
 type R = ActionResult<unknown> | null;
 const zId = z.string().min(1).max(64);
 
 export async function returnStepAction(_p: R, form: FormData): Promise<R> {
+  const t = await getT();
   return runAction(async () => {
     const actor = await requireStaff("returns.manage");
     const d = formToNested(form) as { id?: string; step?: string; note?: string; branchId?: string; items?: { returnItemId: string; condition?: string; restockDecision: string }[] };
@@ -24,7 +26,7 @@ export async function returnStepAction(_p: R, form: FormData): Promise<R> {
       default: throw new Error("unknown step");
     }
     revalidatePath(`/admin/returns/${id}`);
-  }, "تم تحديث المرتجع");
+  }, t("تم تحديث المرتجع"));
 }
 
 export async function staffCreateReturnAction(_p: R, form: FormData): Promise<R> {

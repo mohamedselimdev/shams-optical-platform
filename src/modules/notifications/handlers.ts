@@ -5,8 +5,9 @@ import { emailTransport } from "@/server/notifications/email";
 import { logger } from "@/server/logger";
 import type { JobHandler, JobType } from "@/server/jobs/queue";
 import { getSetting } from "@/server/settings";
-import { formatMoney } from "@/lib/money";
 import { ORDER_STATUS_LABELS } from "@/i18n/labels";
+import { isLocale } from "@/i18n/config";
+import { translatorFor } from "@/i18n/server";
 import { expirePendingOrders } from "../orders/service";
 import { reconcilePayments, refundOrphanPayment } from "../payments/service";
 import { markAbandonedCarts } from "../analytics/service";
@@ -17,11 +18,14 @@ import type { OrderStatus } from "@/generated/prisma/enums";
  * can audit what was sent. SMS is not integrated yet (recorded as SKIPPED); email uses the configured transport.
  */
 async function notifyOrderStatus(payload: Record<string, unknown>) {
-  const order = await db.order.findUnique({ where: { id: String(payload.orderId) }, select: { id: true, number: true, contactName: true, contactEmail: true, contactPhone: true, customerId: true, total: true } });
+  const order = await db.order.findUnique({ where: { id: String(payload.orderId) }, select: { id: true, number: true, contactName: true, contactEmail: true, contactPhone: true, customerId: true, total: true, locale: true } });
   if (!order) return;
   const status = payload.status as OrderStatus;
-  const subject = `طلبك ${order.number}: ${ORDER_STATUS_LABELS[status]}`;
-  const body = `مرحباً ${order.contactName}،\n\nتم تحديث حالة طلبك رقم ${order.number} إلى: ${ORDER_STATUS_LABELS[status]}.\nإجمالي الطلب: ${formatMoney(order.total)}\n\nيمكنك متابعة الطلب من: ${env.APP_URL}/track?order=${encodeURIComponent(order.number)}\n\nشكراً لاختيارك شمس.`;
+  // Customer messages use the language the order was placed in.
+  const t = translatorFor(isLocale(order.locale) ? order.locale : "ar");
+  const statusLabel = t(ORDER_STATUS_LABELS[status]);
+  const subject = t("طلبك {0}: {1}", [order.number, statusLabel]);
+  const body = t("مرحباً {0}،\n\nتم تحديث حالة طلبك رقم {1} إلى: {2}.\nإجمالي الطلب: {3}\n\nيمكنك متابعة الطلب من: {4}/track?order={5}\n\nشكراً لاختيارك شمس.", [order.contactName, order.number, statusLabel, t.money(order.total), env.APP_URL, encodeURIComponent(order.number)]);
 
   if (order.contactEmail) {
     const transport = emailTransport();

@@ -6,8 +6,10 @@ import { formToObject, runAction, type ActionResult } from "@/server/action";
 import { requireStaff } from "@/server/auth/session";
 import { savePromotion } from "@/modules/promotions/service";
 import { cairoLocalToDate } from "@/lib/cairo-time";
+import { getT } from "@/i18n/server";
 
 export async function savePromotionAction(_p: ActionResult<unknown> | null, form: FormData): Promise<ActionResult<unknown> | null> {
+  const t = await getT();
   let createdId: string | null = null;
   const res = await runAction(async () => {
     const actor = await requireStaff("promotions.write");
@@ -22,7 +24,7 @@ export async function savePromotionAction(_p: ActionResult<unknown> | null, form
     });
     if (isNew) createdId = p.id;
     revalidatePath("/admin/promotions");
-  }, "تم حفظ العرض");
+  }, t("تم حفظ العرض"));
   if (res.ok && createdId) redirect(`/admin/promotions/${createdId}`);
   return res;
 }

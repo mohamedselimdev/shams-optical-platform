@@ -1,7 +1,6 @@
-import Link from "next/link";
 import type { ComponentProps, ReactNode } from "react";
 import { cn } from "./cn";
-import { Num } from "./localized";
+import { PaginationNav } from "./localized";
 
 const tones = {
   neutral: "bg-surface-2 text-ink-soft border-line",
@@ -66,18 +65,12 @@ export function Pagination({ page, pageCount, basePath, params }: { page: number
   };
   const pages = Array.from({ length: pageCount }, (_, i) => i + 1).filter((p) => p === 1 || p === pageCount || Math.abs(p - page) <= 2);
   return (
-    <nav aria-label="الصفحات" className="mt-6 flex flex-wrap items-center justify-center gap-1">
-      {page > 1 ? <Link className="rounded-md px-3 py-1.5 text-sm hover:bg-surface-2" href={href(page - 1)} rel="prev">السابق</Link> : null}
-      {pages.map((p, i) => (
-        <span key={p} className="flex items-center">
-          {i > 0 && p - pages[i - 1] > 1 ? <span className="px-1 text-ink-faint">…</span> : null}
-          <Link href={href(p)} aria-current={p === page ? "page" : undefined} className={cn("num min-w-9 rounded-md px-3 py-1.5 text-center text-sm", p === page ? "bg-ink text-surface" : "hover:bg-surface-2")}>
-            <Num value={p} />
-          </Link>
-        </span>
-      ))}
-      {page < pageCount ? <Link className="rounded-md px-3 py-1.5 text-sm hover:bg-surface-2" href={href(page + 1)} rel="next">التالي</Link> : null}
-    </nav>
+    <PaginationNav
+      page={page}
+      links={pages.map((p) => ({ page: p, href: href(p) }))}
+      prev={page > 1 ? href(page - 1) : null}
+      next={page < pageCount ? href(page + 1) : null}
+    />
   );
 }
 

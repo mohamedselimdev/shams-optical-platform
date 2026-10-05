@@ -13,6 +13,8 @@ import { reverseRedemptions } from "../promotions/service";
 import { postLoyalty, reverseOrderLoyalty } from "../loyalty/service";
 import { pointsForAmount } from "../pricing/engine";
 import { CUSTOMER_VISIBLE, canTransition, STOCK_DEDUCTED_AT } from "./state";
+import { getLocaleOrDefault } from "@/i18n/server";
+import { localizeContent } from "@/i18n/localize";
 import { ORDER_STATUS_LABELS } from "@/i18n/labels";
 
 export const ORDER_REF = "order";
@@ -228,13 +230,13 @@ export async function getOrderForStaff(actor: StaffActor, id: string) {
       shipments: true,
       returns: { select: { id: true, number: true, status: true } },
       customer: { select: { id: true, firstName: true, lastName: true, phone: true, email: true } },
-      fulfillmentBranch: { select: { id: true, name: true } },
-      pickupBranch: { select: { id: true, name: true } },
+      fulfillmentBranch: { select: { id: true, name: true, nameEn: true } },
+      pickupBranch: { select: { id: true, name: true, nameEn: true } },
       redemptions: { include: { promotion: { select: { name: true, code: true } } } },
     },
   });
   if (!order) throw notFound("الطلب");
-  return order;
+  return localizeContent(order, await getLocaleOrDefault());
 }
 
 /** Customer-safe order view: only their own orders, public timeline only. */
@@ -245,13 +247,13 @@ export async function getOrderForCustomer(customerId: string, number: string) {
       items: true,
       events: { where: { isPublic: true }, orderBy: { createdAt: "asc" } },
       shipments: { select: { carrier: true, trackingNumber: true, status: true, shippedAt: true, deliveredAt: true } },
-      pickupBranch: { select: { name: true, addressLine: true, city: true, phone: true } },
+      pickupBranch: { select: { name: true, nameEn: true, addressLine: true, city: true, phone: true } },
       returns: { select: { id: true, number: true, status: true } },
     },
   });
   if (!order) throw notFound("الطلب");
   const { idempotencyKey: _k, analyticsSessionId: _s, createdById: _c, ...safe } = order;
-  return { ...safe, items: order.items.map(({ unitCost: _cost, ...i }) => i) };
+  return localizeContent({ ...safe, items: order.items.map(({ unitCost: _cost, ...i }) => i) }, await getLocaleOrDefault());
 }
 
 /** Guest tracking: order number + phone must both match. */
@@ -262,10 +264,10 @@ export async function trackOrder(number: string, phone: string) {
       number: true, status: true, placedAt: true, fulfillmentType: true, total: true,
       events: { where: { isPublic: true }, orderBy: { createdAt: "asc" }, select: { toStatus: true, message: true, createdAt: true, type: true } },
       shipments: { select: { carrier: true, trackingNumber: true, status: true } },
-      pickupBranch: { select: { name: true, addressLine: true } },
+      pickupBranch: { select: { name: true, nameEn: true, addressLine: true } },
     },
   });
-  return order;
+  return localizeContent(order, await getLocaleOrDefault());
 }
 
 export async function listCustomerOrders(customerId: string) {

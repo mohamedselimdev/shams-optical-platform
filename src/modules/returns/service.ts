@@ -11,6 +11,8 @@ import type { ReturnStatus } from "@/generated/prisma/enums";
 import { applyMovement } from "../inventory/ledger";
 import { postLoyalty } from "../loyalty/service";
 import { refundPayment } from "../payments/service";
+import { getLocaleOrDefault } from "@/i18n/server";
+import { localizeContent } from "@/i18n/localize";
 import { applyTransition, lockOrder } from "../orders/service";
 
 const REF = "return";
@@ -221,22 +223,24 @@ export async function getReturnForStaff(actor: StaffActor, id: string) {
     include: {
       order: { select: { id: true, number: true, fulfillmentBranchId: true, paidTotal: true, refundedTotal: true } },
       customer: { select: { id: true, firstName: true, lastName: true, phone: true } },
-      branch: { select: { name: true } },
-      items: { include: { orderItem: { select: { productName: true, sku: true, quantity: true, lineTotal: true, variantName: true } } } },
+      branch: { select: { name: true, nameEn: true } },
+      items: { include: { orderItem: { select: { productName: true, productNameEn: true, sku: true, quantity: true, lineTotal: true, variantName: true } } } },
       events: { orderBy: { createdAt: "asc" } },
     },
   });
   if (!r) throw notFound("طلب الإرجاع");
-  return { ...r, estimatedRefund: Math.min(computeReturnRefund(r.items), r.order.paidTotal - r.order.refundedTotal) };
+  const view = { ...r, estimatedRefund: Math.min(computeReturnRefund(r.items), r.order.paidTotal - r.order.refundedTotal) };
+  return localizeContent(view, await getLocaleOrDefault());
 }
 
 /** A customer's own return requests. */
 export async function listMyReturns(customerId: string) {
-  return db.returnRequest.findMany({
+  const rows = await db.returnRequest.findMany({
     where: { customerId },
     orderBy: { createdAt: "desc" },
-    include: { order: { select: { number: true } }, items: { include: { orderItem: { select: { productName: true, variantName: true } } } } },
+    include: { order: { select: { number: true } }, items: { include: { orderItem: { select: { productName: true, productNameEn: true, variantName: true } } } } },
   });
+  return localizeContent(rows, await getLocaleOrDefault());
 }
 
 /** Which items of a delivered order the customer may still request to return (same rules as createReturn). */

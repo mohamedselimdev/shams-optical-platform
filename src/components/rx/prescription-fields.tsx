@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { ADD_RANGE, AXIS_RANGE, CYL_RANGE, MONO_PD_RANGE, PD_RANGE, SPH_RANGE, formatDiopter, formatPd } from "@/lib/optics";
 import { useFieldError } from "@/ui/action-form";
+import { useT } from "@/i18n/client";
 
 export type RxInitial = Partial<Record<"odSph" | "odCyl" | "odAxis" | "odAdd" | "osSph" | "osCyl" | "osAxis" | "osAdd" | "pd" | "pdRight" | "pdLeft", number | null>> & { pdType?: "SINGLE" | "DUAL" };
 
@@ -26,6 +27,7 @@ function RxSelect({ name, values, fmt, initial, label, prefix }: { name: string;
  * (hundredths of a diopter, tenths of a mm) and validated again on the server.
  */
 export function PrescriptionFields({ initial = {}, prefix = "", showAdd = true }: { initial?: RxInitial; prefix?: string; showAdd?: boolean }) {
+  const t = useT();
   const [pdType, setPdType] = useState<"SINGLE" | "DUAL">(initial.pdType ?? "SINGLE");
   const pdSingleErr = useFieldError(`${prefix}pd`);
   const pdDualErr = useFieldError(`${prefix}pdRight`);
@@ -44,7 +46,7 @@ export function PrescriptionFields({ initial = {}, prefix = "", showAdd = true }
           <tbody>
             {(["od", "os"] as const).map((eye) => (
               <tr key={eye}>
-                <th className="pe-2 text-start text-xs font-medium" dir="rtl">{eye === "od" ? "العين اليمنى (OD)" : "العين اليسرى (OS)"}</th>
+                <th className="pe-2 text-start text-xs font-medium" dir="rtl">{eye === "od" ? t("العين اليمنى (OD)") : t("العين اليسرى (OS)")}</th>
                 <td><RxSelect prefix={prefix} name={`${eye}Sph`} values={sph0} fmt={formatDiopter} initial={initial[`${eye}Sph`]} label={`SPH ${eye.toUpperCase()}`} /></td>
                 <td><RxSelect prefix={prefix} name={`${eye}Cyl`} values={CYL_RANGE} fmt={formatDiopter} initial={initial[`${eye}Cyl`]} label={`CYL ${eye.toUpperCase()}`} /></td>
                 <td><RxSelect prefix={prefix} name={`${eye}Axis`} values={AXIS_RANGE} fmt={axisFmt} initial={initial[`${eye}Axis`]} label={`AXIS ${eye.toUpperCase()}`} /></td>
@@ -55,10 +57,10 @@ export function PrescriptionFields({ initial = {}, prefix = "", showAdd = true }
         </table>
       </div>
       <fieldset className="flex flex-wrap items-end gap-3">
-        <legend className="mb-1 text-sm font-medium text-ink-soft">المسافة بين الحدقتين (PD)</legend>
+        <legend className="mb-1 text-sm font-medium text-ink-soft">{t("المسافة بين الحدقتين (PD)")}</legend>
         <div className="flex gap-3 text-sm">
-          <label className="flex items-center gap-1.5"><input type="radio" name={`${prefix}pdType`} value="SINGLE" checked={pdType === "SINGLE"} onChange={() => setPdType("SINGLE")} className="accent-ink" /> رقم واحد</label>
-          <label className="flex items-center gap-1.5"><input type="radio" name={`${prefix}pdType`} value="DUAL" checked={pdType === "DUAL"} onChange={() => setPdType("DUAL")} className="accent-ink" /> لكل عين</label>
+          <label className="flex items-center gap-1.5"><input type="radio" name={`${prefix}pdType`} value="SINGLE" checked={pdType === "SINGLE"} onChange={() => setPdType("SINGLE")} className="accent-ink" /> {t("رقم واحد")}</label>
+          <label className="flex items-center gap-1.5"><input type="radio" name={`${prefix}pdType`} value="DUAL" checked={pdType === "DUAL"} onChange={() => setPdType("DUAL")} className="accent-ink" /> {t("لكل عين")}</label>
         </div>
         {pdType === "SINGLE" ? (
           <select name={`${prefix}pd`} defaultValue={initial.pd ?? ""} className={`${cell} !w-28`} aria-label="PD" dir="ltr">
@@ -67,12 +69,12 @@ export function PrescriptionFields({ initial = {}, prefix = "", showAdd = true }
           </select>
         ) : (
           <>
-            <select name={`${prefix}pdRight`} defaultValue={initial.pdRight ?? ""} className={`${cell} !w-28`} aria-label="PD يمين" dir="ltr">
-              <option value="">يمين</option>
+            <select name={`${prefix}pdRight`} defaultValue={initial.pdRight ?? ""} className={`${cell} !w-28`} aria-label={t("PD يمين")} dir="ltr">
+              <option value="">{t("يمين")}</option>
               {MONO_PD_RANGE.map((v) => <option key={v} value={v}>{formatPd(v)}</option>)}
             </select>
-            <select name={`${prefix}pdLeft`} defaultValue={initial.pdLeft ?? ""} className={`${cell} !w-28`} aria-label="PD يسار" dir="ltr">
-              <option value="">يسار</option>
+            <select name={`${prefix}pdLeft`} defaultValue={initial.pdLeft ?? ""} className={`${cell} !w-28`} aria-label={t("PD يسار")} dir="ltr">
+              <option value="">{t("يسار")}</option>
               {MONO_PD_RANGE.map((v) => <option key={v} value={v}>{formatPd(v)}</option>)}
             </select>
           </>

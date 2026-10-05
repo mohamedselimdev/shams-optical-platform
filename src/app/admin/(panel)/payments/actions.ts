@@ -6,8 +6,10 @@ import { requireStaff } from "@/server/auth/session";
 import { reconcilePayments } from "@/modules/payments/service";
 import { audit } from "@/server/audit";
 import { db } from "@/server/db";
+import { getT } from "@/i18n/server";
 
 export async function reconcileAction(_p: ActionResult<unknown> | null): Promise<ActionResult<unknown> | null> {
+  const t = await getT();
   const res = await runAction(async () => {
     const actor = await requireStaff("payments.reconcile");
     const summary = await reconcilePayments(15);
@@ -17,7 +19,7 @@ export async function reconcileAction(_p: ActionResult<unknown> | null): Promise
   });
   if (res.ok) {
     const s = res.data as { checked: number; updated: number; unresolved: number };
-    return { ...res, message: `تم فحص ${s.checked} عملية معلقة: حُدِّث ${s.updated}، وتبقى ${s.unresolved} للمراجعة اليدوية.` };
+    return { ...res, message: t("تم فحص {0} عملية معلقة: حُدِّث {1}، وتبقى {2} للمراجعة اليدوية.", [s.checked, s.updated, s.unresolved]) };
   }
   return res;
 }

@@ -7,16 +7,19 @@ import { homeRail, storefrontTaxonomy } from "@/modules/catalog/queries";
 import { listPublicBranches } from "@/modules/branches/service";
 import { ProductGrid } from "@/components/store/product-card";
 import { ButtonLink } from "@/ui/button";
+import { getT } from "@/i18n/server";
+import { localizeContent } from "@/i18n/localize";
 
 export const dynamic = "force-dynamic";
 
 type SectionConfig = { limit?: number; collectionSlug?: string };
 
 export default async function Home() {
+  const t = await getT();
   const [hero, promo, sections, taxonomy, branches, store] = await Promise.all([
     activeBanners("HOME_HERO"),
     activeBanners("HOME_PROMO"),
-    db.homeSection.findMany({ where: { isActive: true }, orderBy: { sortOrder: "asc" } }),
+    db.homeSection.findMany({ where: { isActive: true }, orderBy: { sortOrder: "asc" } }).then((rows) => localizeContent(rows, t.locale)),
     storefrontTaxonomy(),
     listPublicBranches(),
     getSetting("store"),
@@ -30,7 +33,7 @@ export default async function Home() {
     name: store.name,
     alternateName: store.nameEn,
     url: process.env.APP_URL,
-    contactPoint: { "@type": "ContactPoint", telephone: store.supportPhone, contactType: "customer service", areaServed: "EG", availableLanguage: ["ar"] },
+    contactPoint: { "@type": "ContactPoint", telephone: store.supportPhone, contactType: "customer service", areaServed: "EG", availableLanguage: ["ar", "en"] },
   };
 
   return (
@@ -41,12 +44,12 @@ export default async function Home() {
         <div className="absolute end-40 top-56 h-24 w-24 rounded-full bg-sun-300/40" aria-hidden />
         <div className="container-page relative grid gap-8 py-16 md:py-24 lg:grid-cols-2">
           <div className="max-w-xl">
-            <p className="mb-3 text-sm font-medium text-sun-300">شمس للبصريات</p>
-            <h1 className="font-display text-4xl font-bold leading-tight md:text-5xl">{banner?.title ?? "شوف الدنيا بوضوح"}</h1>
+            <p className="mb-3 text-sm font-medium text-sun-300">{t("شمس للبصريات")}</p>
+            <h1 className="font-display text-4xl font-bold leading-tight md:text-5xl">{banner?.title ?? t("شوف الدنيا بوضوح")}</h1>
             {banner?.subtitle ? <p className="mt-4 text-lg text-on-night/80">{banner.subtitle}</p> : null}
             <div className="mt-8 flex flex-wrap gap-3">
-              <ButtonLink href={banner?.ctaHref ?? "/shop"} variant="accent" size="lg">{banner?.ctaLabel ?? "تسوّق الآن"}</ButtonLink>
-              <ButtonLink href="/stores" variant="secondary" size="lg" className="border-on-night/30 bg-transparent text-on-night hover:bg-on-night/10">فروعنا</ButtonLink>
+              <ButtonLink href={banner?.ctaHref ?? "/shop"} variant="accent" size="lg">{banner?.ctaLabel ?? t("تسوّق الآن")}</ButtonLink>
+              <ButtonLink href="/stores" variant="secondary" size="lg" className="border-on-night/30 bg-transparent text-on-night hover:bg-on-night/10">{t("فروعنا")}</ButtonLink>
             </div>
           </div>
           {banner?.imageUrl ? (
@@ -56,13 +59,13 @@ export default async function Home() {
         </div>
       </section>
 
-      <section className="border-b border-line bg-surface" aria-label="مميزات الخدمة">
+      <section className="border-b border-line bg-surface" aria-label={t("مميزات الخدمة")}>
         <ul className="container-page grid grid-cols-2 gap-4 py-6 text-sm md:grid-cols-4">
           {[
-            { icon: Glasses, title: "عدسات حسب وصفتك", text: "يراجعها أخصائي قبل التصنيع" },
-            { icon: Truck, title: "توصيل لكل المحافظات", text: "أو الدفع عند الاستلام" },
-            { icon: MapPin, title: `${branches.length} فروع`, text: "استلم طلبك من أقرب فرع" },
-            { icon: ShieldCheck, title: "دفع آمن", text: "لا نخزن بيانات بطاقتك" },
+            { icon: Glasses, title: t("عدسات حسب وصفتك"), text: t("يراجعها أخصائي قبل التصنيع") },
+            { icon: Truck, title: t("توصيل لكل المحافظات"), text: t("أو الدفع عند الاستلام") },
+            { icon: MapPin, title: t("{0} فروع", [branches.length]), text: t("استلم طلبك من أقرب فرع") },
+            { icon: ShieldCheck, title: t("دفع آمن"), text: t("لا نخزن بيانات بطاقتك") },
           ].map(({ icon: Icon, title, text }) => (
             <li key={title} className="flex items-start gap-3">
               <Icon className="mt-0.5 h-5 w-5 shrink-0 text-sun-600" aria-hidden />
@@ -84,7 +87,7 @@ export default async function Home() {
                     <li key={c.slug}>
                       <Link href={`/c/${c.slug}`} className={`group flex h-32 flex-col justify-between rounded-lg p-5 transition hover:shadow-pop ${["bg-sun-100", "bg-surface-2", "bg-nile/10", "bg-clay/10"][n % 4]}`}>
                         <span className="font-display text-lg font-semibold">{c.name}</span>
-                        <span className="flex items-center gap-1 text-sm text-ink-muted group-hover:text-ink">تسوّق <ArrowLeft className="h-4 w-4" aria-hidden /></span>
+                        <span className="flex items-center gap-1 text-sm text-ink-muted group-hover:text-ink">{t("تسوّق")}{" "}<ArrowLeft className="h-4 w-4 ltr:rotate-180" aria-hidden /></span>
                       </Link>
                     </li>
                   ))}
@@ -111,7 +114,7 @@ export default async function Home() {
             <section key={s.id} aria-labelledby={`sec-${s.id}`}>
               <div className="mb-6 flex items-end justify-between">
                 <h2 id={`sec-${s.id}`} className="font-display text-2xl font-semibold">{s.title}</h2>
-                <Link href={more} className="text-sm font-medium text-sun-700 hover:underline">عرض الكل</Link>
+                <Link href={more} className="text-sm font-medium text-sun-700 hover:underline">{t("عرض الكل")}</Link>
               </div>
               <ProductGrid products={products} />
             </section>
@@ -122,7 +125,7 @@ export default async function Home() {
           <section className="rounded-xl bg-nile px-8 py-12 text-on-night">
             <h2 className="font-display text-3xl font-bold">{promo[0].title}</h2>
             {promo[0].subtitle ? <p className="mt-2 max-w-xl text-on-night/80">{promo[0].subtitle}</p> : null}
-            {promo[0].ctaHref ? <ButtonLink href={promo[0].ctaHref} variant="accent" className="mt-6">{promo[0].ctaLabel ?? "اكتشف"}</ButtonLink> : null}
+            {promo[0].ctaHref ? <ButtonLink href={promo[0].ctaHref} variant="accent" className="mt-6">{promo[0].ctaLabel ?? t("اكتشف")}</ButtonLink> : null}
           </section>
         ) : null}
       </div>

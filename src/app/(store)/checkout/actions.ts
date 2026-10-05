@@ -13,6 +13,7 @@ import { invalidState, notFound } from "@/server/errors";
 import { placeOrder } from "@/modules/checkout/service";
 import { findActiveCart } from "@/modules/cart/service";
 import { initiateOnlinePayment } from "@/modules/payments/service";
+import { getLocale, getT } from "@/i18n/server";
 
 type R = ActionResult<unknown> | null;
 
@@ -37,7 +38,7 @@ export async function placeOrderAction(_p: R, form: FormData): Promise<R> {
     // The coupon is the one applied on the cart page (re-validated inside placeOrder).
     const cart = await findActiveCart(db, { token: cartToken, customerId: actor?.customerId ?? null });
     const result = await placeOrder(
-      { actor, customerId: actor?.customerId ?? null, cartToken },
+      { actor, customerId: actor?.customerId ?? null, cartToken, locale: await getLocale() },
       {
         ...(d as object),
         address: d.addressId ? undefined : (d.address as never),
@@ -67,12 +68,13 @@ export async function placeOrderAction(_p: R, form: FormData): Promise<R> {
 
 /** Retry an online payment for a pending order the shopper owns. */
 export async function retryPaymentAction(_p: R, form: FormData): Promise<R> {
+  const t = await getT();
   let target: string | null = null;
   const res = await runAction(async () => {
     const number = z.string().min(3).max(40).parse(form.get("order"));
     const order = await findShopperOrder(number);
-    if (!order) throw notFound("الطلب");
-    if (order.status !== "PENDING_PAYMENT") throw invalidState("الطلب لا ينتظر الدفع");
+    if (!order) throw notFound(t("الطلب"));
+    if (order.status !== "PENDING_PAYMENT") throw invalidState(t("الطلب لا ينتظر الدفع"));
     const payment = await initiateOnlinePayment(order.id, order.paymentMethod);
     target = payment.redirectUrl ?? `/checkout/result?order=${encodeURIComponent(number)}`;
   });

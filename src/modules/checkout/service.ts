@@ -18,6 +18,7 @@ import { postLoyalty } from "../loyalty/service";
 import { providerForMethod } from "../payments/registry";
 import { buildQuote, type Quote } from "./quote";
 import { ORDER_REF } from "../orders/service";
+import type { Locale } from "@/i18n/config";
 
 export const addressSchema = z.object({
   fullName: zText(120),
@@ -71,7 +72,7 @@ export type PlaceOrderResult = { orderId: string; number: string; requiresOnline
  * double-submits return the original order instead of creating a duplicate.
  */
 export async function placeOrder(
-  ctx: { actor: Actor | null; customerId: string | null; cartToken: string | null },
+  ctx: { actor: Actor | null; customerId: string | null; cartToken: string | null; locale?: Locale },
   input: CheckoutInput,
 ): Promise<PlaceOrderResult> {
   const data = checkoutSchema.parse(input);
@@ -121,7 +122,7 @@ export async function placeOrder(
         const online = data.paymentMethod === "CARD" || data.paymentMethod === "WALLET";
         const initialStatus: OrderStatus = online ? "PENDING_PAYMENT" : quote.requiresPrescription ? "PRESCRIPTION_REVIEW" : "PROCESSING";
         const number = await nextNumber(tx, "order", "SH");
-        const order = await tx.order.create({ data: buildOrderData(quote, cart, data, { number, branchId, initialStatus, address, customerId: ctx.customerId, actor: ctx.actor }) });
+        const order = await tx.order.create({ data: buildOrderData(quote, cart, data, { number, branchId, initialStatus, address, customerId: ctx.customerId, actor: ctx.actor, locale: ctx.locale }) });
 
         const expiresAt = online ? new Date(Date.now() + checkoutSettings.pendingPaymentTtlMinutes * 60_000) : null;
         const qtyByVariant = new Map<string, number>();
@@ -233,7 +234,7 @@ export function buildOrderData(
   quote: Quote,
   cart: CartWithItems,
   data: OrderDataInput,
-  extra: { number: string; branchId: string; initialStatus: OrderStatus; address: unknown; customerId: string | null; actor: Actor | null; channel?: "WEB" | "POS" | "ADMIN" },
+  extra: { number: string; branchId: string; initialStatus: OrderStatus; address: unknown; customerId: string | null; actor: Actor | null; channel?: "WEB" | "POS" | "ADMIN"; locale?: Locale },
 ): Prisma.OrderUncheckedCreateInput {
   const p = quote.pricing;
   const priced = new Map(p.lines.map((l) => [l.key, l]));
@@ -241,6 +242,7 @@ export function buildOrderData(
     number: extra.number,
     customerId: extra.customerId,
     channel: extra.channel ?? "WEB",
+    locale: extra.locale ?? "ar",
     status: extra.initialStatus,
     paymentStatus: "UNPAID",
     paymentMethod: data.paymentMethod,
@@ -272,12 +274,15 @@ export function buildOrderData(
         const pl = priced.get(l.item.id)!;
         const v = l.item.variant;
         const variantName = [v.colorName, v.sizeLabel].filter(Boolean).join(" / ") || null;
+        const variantNameEn = v.colorNameEn ? [v.colorNameEn, v.sizeLabel].filter(Boolean).join(" / ") : null;
         return {
           variantId: v.id,
           productId: v.product.id,
           sku: v.sku,
           productName: v.product.name,
+          productNameEn: v.product.nameEn ?? null,
           variantName,
+          variantNameEn,
           brandName: v.product.brand?.name ?? null,
           brandId: v.product.brand?.id ?? null,
           categoryId: v.product.category?.id ?? null,

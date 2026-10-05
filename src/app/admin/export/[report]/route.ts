@@ -7,6 +7,7 @@ import { findReport, ORDERS_EXPORT, runOrdersExport } from "@/modules/reports/re
 import { toCsv, toXlsx } from "@/modules/reports/export";
 import { parseRange } from "@/components/admin/range";
 import { OrderStatus } from "@/generated/prisma/enums";
+import { getT } from "@/i18n/server";
 
 /**
  * Report exports. Requires an authenticated staff session with `reports.export` AND the report's
@@ -36,13 +37,18 @@ export async function GET(req: Request, { params }: { params: Promise<{ report: 
           })
         : await def.run(actor, range);
     await audit(db, actor, { action: "report.export", entityType: "report", entityId: def.key, branchId: range.branchId, metadata: { format, rows: rows.length, from: range.fromStr, to: range.toStr } });
+    // Headings and fixed labels (statuses, methods…) follow the staff member's interface language; names stay as stored.
+    const t = await getT();
+    const columns = def.columns.map((c) => ({ ...c, label: t(c.label) }));
+    const translated = rows.map((r) => Object.fromEntries(Object.entries(r).map(([k, v]) => [k, typeof v === "string" && columns.find((c) => c.key === k)?.type === "text" ? t(v) : v])));
+    const lang = { currency: t("ج.م"), rtl: t.dir === "rtl" };
     const name = `shams-${def.key}-${range.fromStr}_${range.toStr}.${format}`;
     const headers = { "Content-Disposition": `attachment; filename="${name}"`, "Cache-Control": "private, no-store", "X-Content-Type-Options": "nosniff" };
     if (format === "xlsx") {
-      const buf = await toXlsx(def.title, def.columns, rows);
+      const buf = await toXlsx(t(def.title), columns, translated, lang);
       return new Response(new Uint8Array(buf), { headers: { ...headers, "Content-Type": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" } });
     }
-    return new Response(toCsv(def.columns, rows), { headers: { ...headers, "Content-Type": "text/csv; charset=utf-8" } });
+    return new Response(toCsv(columns, translated, lang), { headers: { ...headers, "Content-Type": "text/csv; charset=utf-8" } });
   } catch (e) {
     if (isDomainError(e)) return new Response(e.message, { status: e.code === "FORBIDDEN" ? 403 : 400 });
     throw e;

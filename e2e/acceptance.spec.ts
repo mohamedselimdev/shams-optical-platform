@@ -76,3 +76,21 @@ test("webhooks with an invalid signature are rejected", async ({ request }) => {
   const res = await request.post("/api/webhooks/payments/sandbox", { data: { id: "evt_forged", type: "payment", status: "SUCCEEDED" }, headers: { "x-sandbox-signature": "forged" } });
   expect(res.status()).toBe(401);
 });
+
+test("visitors can switch to English and pick a light or dark theme", async ({ page }) => {
+  await page.goto("/");
+  await expect(page.locator("html")).toHaveAttribute("dir", "rtl");
+  await page.getByRole("button", { name: "تغيير اللغة" }).click();
+  await expect(page.locator("html")).toHaveAttribute("lang", "en");
+  await expect(page.locator("html")).toHaveAttribute("dir", "ltr");
+  await expect(page.getByRole("link", { name: "All products" })).toBeVisible();
+
+  // system → light → dark, kept after a reload.
+  await page.getByRole("button", { name: "System theme" }).click();
+  await expect(page.locator("html")).toHaveAttribute("data-theme", "light");
+  await page.getByRole("button", { name: "Light mode" }).click();
+  await expect(page.locator("html")).toHaveAttribute("data-theme", "dark");
+  await page.reload();
+  await expect(page.locator("html")).toHaveAttribute("data-theme", "dark");
+  await expect(page.locator("html")).toHaveAttribute("lang", "en");
+});

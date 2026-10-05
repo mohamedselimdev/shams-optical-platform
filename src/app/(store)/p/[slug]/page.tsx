@@ -1,4 +1,3 @@
-import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Star } from "lucide-react";
@@ -18,8 +17,11 @@ import { RecentlyViewed, RememberProduct, CompareButton } from "@/components/sto
 import { ActionForm } from "@/ui/action-form";
 import { SubmitButton } from "@/ui/submit-button";
 import { SelectField, TextArea, TextField } from "@/ui/fields";
-import { DateText, DefinitionList, numberFmt } from "@/ui/primitives";
+import { DateText, DefinitionList } from "@/ui/primitives";
 import { addToCartAction, reviewAction, toggleWishlistAction } from "./actions";
+import { getT } from "@/i18n/server";
+import { localizeContent } from "@/i18n/localize";
+import type { Metadata } from "next";
 
 type Props = { params: Promise<{ slug: string }> };
 
@@ -33,6 +35,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 }
 
 export default async function ProductPage({ params }: Props) {
+  const t = await getT();
   const { slug } = await params;
   const product = await getProductBySlug(slug);
   if (!product) notFound();
@@ -41,7 +44,7 @@ export default async function ProductPage({ params }: Props) {
     relatedProducts(product.id, product.categoryId, product.brandId),
     listPublicBranches(),
     branchAvailability(product.id),
-    product.prescriptionCompatible ? lensCatalog(db) : Promise.resolve(null),
+    product.prescriptionCompatible ? lensCatalog(db).then((c) => localizeContent(c, t.locale)) : Promise.resolve(null),
     actor ? listMyPrescriptions(actor) : Promise.resolve(null),
     getSetting("checkout"),
     actor ? db.wishlistItem.count({ where: { customerId: actor.customerId, productId: product.id } }) : Promise.resolve(0),
@@ -68,13 +71,13 @@ export default async function ProductPage({ params }: Props) {
   };
 
   const specs: ({ label: string; value: React.ReactNode } | null)[] = [
-    { label: "النوع", value: PRODUCT_TYPE_LABELS[product.type] },
-    product.gender ? { label: "لمن", value: GENDER_LABELS[product.gender] } : null,
-    product.frameShape ? { label: "شكل الإطار", value: shapeLabel(product.frameShape) } : null,
-    product.frameMaterial ? { label: "الخامة", value: product.frameMaterial } : null,
-    v0?.lensWidthMm ? { label: "المقاسات (عدسة □ جسر — ذراع)", value: <span className="num" dir="ltr">{v0.lensWidthMm}□{v0.bridgeMm ?? "–"} — {v0.templeMm ?? "–"} mm</span> } : null,
-    product.polarized ? { label: "العدسات", value: "مستقطبة (Polarized)" } : null,
-    { label: "تركيب عدسات طبية", value: product.prescriptionCompatible ? "متاح" : "غير متاح" },
+    { label: t("النوع"), value: t(PRODUCT_TYPE_LABELS[product.type]) },
+    product.gender ? { label: t("لمن"), value: t(GENDER_LABELS[product.gender]) } : null,
+    product.frameShape ? { label: t("شكل الإطار"), value: t(shapeLabel(product.frameShape)) } : null,
+    product.frameMaterial ? { label: t("الخامة"), value: product.frameMaterial } : null,
+    v0?.lensWidthMm ? { label: t("المقاسات (عدسة □ جسر — ذراع)"), value: <span className="num" dir="ltr">{v0.lensWidthMm}□{v0.bridgeMm ?? "–"} — {v0.templeMm ?? "–"} mm</span> } : null,
+    product.polarized ? { label: t("العدسات"), value: t("مستقطبة (Polarized)") } : null,
+    { label: t("تركيب عدسات طبية"), value: product.prescriptionCompatible ? t("متاح") : t("غير متاح") },
   ];
 
   return (
@@ -82,22 +85,22 @@ export default async function ProductPage({ params }: Props) {
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd).replace(/</g, "\\u003c") }} />
       <TrackOnMount event={{ name: "product_view", productId: product.id }} />
       <RememberProduct id={product.id} />
-      <nav aria-label="مسار التنقل" className="mb-6 text-sm text-ink-muted">
-        <Link href="/" className="hover:text-ink">الرئيسية</Link>
+      <nav aria-label={t("مسار التنقل")} className="mb-6 text-sm text-ink-muted">
+        <Link href="/" className="hover:text-ink">{t("الرئيسية")}</Link>
         {product.category?.parent ? <> / <Link href={`/c/${product.category.parent.slug}`} className="hover:text-ink">{product.category.parent.name}</Link></> : null}
         {product.category ? <> / <Link href={`/c/${product.category.slug}`} className="hover:text-ink">{product.category.name}</Link></> : null}
         {" / "}<span className="text-ink">{product.name}</span>
       </nav>
 
       <div className="grid gap-10 lg:grid-cols-[minmax(0,1.2fr)_minmax(0,1fr)]">
-        <section aria-label="صور المنتج" className="space-y-3">
+        <section aria-label={t("صور المنتج")} className="space-y-3">
           {product.images.length ? (
             product.images.map((img, i) => (
               // eslint-disable-next-line @next/next/no-img-element -- product media (local SVG/uploads or object storage).
               <img key={img.id} src={img.url} alt={img.alt ?? product.name} loading={i === 0 ? "eager" : "lazy"} className="aspect-[4/3] w-full rounded-lg border border-line bg-surface-2 object-cover" />
             ))
           ) : (
-            <div className="flex aspect-[4/3] items-center justify-center rounded-lg border border-line bg-surface-2 text-ink-faint">لا توجد صورة</div>
+            <div className="flex aspect-[4/3] items-center justify-center rounded-lg border border-line bg-surface-2 text-ink-faint">{t("لا توجد صورة")}</div>
           )}
         </section>
 
@@ -108,7 +111,7 @@ export default async function ProductPage({ params }: Props) {
             {product.rating.count ? (
               <p className="mt-2 flex items-center gap-1 text-sm text-ink-muted">
                 <Star className="h-4 w-4 fill-sun-400 text-sun-400" aria-hidden />
-                <span className="num">{product.rating.average.toFixed(1)}</span> · <a href="#reviews" className="hover:underline"><span className="num">{numberFmt.format(product.rating.count)}</span> تقييم</a>
+                <span className="num">{product.rating.average.toFixed(1)}</span> · <a href="#reviews" className="hover:underline"><span className="num">{t.number(product.rating.count)}</span> {t("تقييم")}</a>
               </p>
             ) : null}
           </div>
@@ -137,9 +140,9 @@ export default async function ProductPage({ params }: Props) {
               <input type="hidden" name="productId" value={product.id} />
               <input type="hidden" name="path" value={`/p/${product.slug}`} />
               {actor ? (
-                <SubmitButton variant="secondary" size="sm" pendingLabel="…">{wished ? "♥ في المفضلة" : "♡ أضف للمفضلة"}</SubmitButton>
+                <SubmitButton variant="secondary" size="sm" pendingLabel="…">{wished ? t("♥ في المفضلة") : t("♡ أضف للمفضلة")}</SubmitButton>
               ) : (
-                <Link href={`/login?next=${encodeURIComponent(`/p/${product.slug}`)}`} className="inline-flex h-8 items-center rounded-md border border-line-strong px-3 text-sm">♡ أضف للمفضلة</Link>
+                <Link href={`/login?next=${encodeURIComponent(`/p/${product.slug}`)}`} className="inline-flex h-8 items-center rounded-md border border-line-strong px-3 text-sm">{t("♡ أضف للمفضلة")}</Link>
               )}
             </ActionForm>
             <CompareButton id={product.id} />
@@ -152,15 +155,15 @@ export default async function ProductPage({ params }: Props) {
 
       <section id="reviews" className="mt-16 grid gap-8 lg:grid-cols-[minmax(0,1.2fr)_minmax(0,1fr)]" aria-labelledby="reviews-title">
         <div>
-          <h2 id="reviews-title" className="mb-4 font-display text-2xl font-semibold">التقييمات</h2>
+          <h2 id="reviews-title" className="mb-4 font-display text-2xl font-semibold">{t("التقييمات")}</h2>
           {product.reviews.length ? (
             <ul className="space-y-4">
               {product.reviews.map((r) => (
                 <li key={r.id} className="rounded-lg border border-line bg-surface p-4">
                   <p className="flex items-center gap-2 text-sm">
-                    <span className="text-sun-500" aria-label={`${r.rating} من 5`}>{"★".repeat(r.rating)}<span className="text-line-strong">{"★".repeat(5 - r.rating)}</span></span>
+                    <span className="text-sun-500" aria-label={t("{0} من 5", [r.rating])}>{"★".repeat(r.rating)}<span className="text-line-strong">{"★".repeat(5 - r.rating)}</span></span>
                     <span className="font-medium">{r.customer.firstName}</span>
-                    {r.verifiedPurchase ? <span className="text-xs text-success">مشتري مؤكد</span> : null}
+                    {r.verifiedPurchase ? <span className="text-xs text-success">{t("مشتري مؤكد")}</span> : null}
                     <span className="ms-auto text-xs text-ink-muted"><DateText value={r.createdAt} /></span>
                   </p>
                   {r.title ? <p className="mt-2 font-medium">{r.title}</p> : null}
@@ -169,28 +172,28 @@ export default async function ProductPage({ params }: Props) {
               ))}
             </ul>
           ) : (
-            <p className="text-sm text-ink-muted">لا توجد تقييمات بعد.</p>
+            <p className="text-sm text-ink-muted">{t("لا توجد تقييمات بعد.")}</p>
           )}
         </div>
         <div className="rounded-lg border border-line bg-surface p-5">
-          <h3 className="mb-3 font-semibold">قيّم هذا المنتج</h3>
+          <h3 className="mb-3 font-semibold">{t("قيّم هذا المنتج")}</h3>
           {actor ? (
             <ActionForm action={reviewAction} resetOnSuccess className="space-y-3">
               <input type="hidden" name="productId" value={product.id} />
-              <SelectField label="التقييم" name="rating" required placeholder="اختر" options={[5, 4, 3, 2, 1].map((n) => ({ value: String(n), label: `${"★".repeat(n)} (${n})` }))} />
-              <TextField label="العنوان" name="title" maxLength={120} />
-              <TextArea label="رأيك" name="body" rows={3} maxLength={2000} />
-              <SubmitButton>إرسال التقييم</SubmitButton>
+              <SelectField label={t("التقييم")} name="rating" required placeholder={t("اختر")} options={[5, 4, 3, 2, 1].map((n) => ({ value: String(n), label: `${"★".repeat(n)} (${n})` }))} />
+              <TextField label={t("العنوان")} name="title" maxLength={120} />
+              <TextArea label={t("رأيك")} name="body" rows={3} maxLength={2000} />
+              <SubmitButton>{t("إرسال التقييم")}</SubmitButton>
             </ActionForm>
           ) : (
-            <p className="text-sm text-ink-muted"><Link href={`/login?next=${encodeURIComponent(`/p/${product.slug}`)}`} className="font-medium text-ink underline">سجّل الدخول</Link> لكتابة تقييم.</p>
+            <p className="text-sm text-ink-muted"><Link href={`/login?next=${encodeURIComponent(`/p/${product.slug}`)}`} className="font-medium text-ink underline">{t("سجّل الدخول")}</Link> {t("لكتابة تقييم.")}</p>
           )}
         </div>
       </section>
 
       {related.length ? (
         <section className="mt-16" aria-labelledby="related-title">
-          <h2 id="related-title" className="mb-6 font-display text-2xl font-semibold">قد يعجبك أيضاً</h2>
+          <h2 id="related-title" className="mb-6 font-display text-2xl font-semibold">{t("قد يعجبك أيضاً")}</h2>
           <ProductGrid products={related.slice(0, 4)} />
         </section>
       ) : null}
